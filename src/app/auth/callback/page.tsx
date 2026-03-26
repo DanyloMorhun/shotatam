@@ -5,11 +5,54 @@ import { useSearchParams } from 'next/navigation';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
+interface UserBasicInfo {
+  userId: string;
+  nickname: string;
+  avatarUrl: string | null;
+}
+
+interface UserPrivateProfile {
+  userId: string;
+  nickname: string;
+  avatarUrl: string | null;
+  profileUrl: string;
+  createdAt: string;
+  lastLoginAt: string | null;
+}
+
+function UserCard({ user, details, onLogout }: { user: UserBasicInfo; details: UserPrivateProfile | null; onLogout: () => void }) {
+  return (
+    <section style={{ border: '1px solid #ddd', borderRadius: 8, padding: '1rem', margin: '1rem 0' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+        {user.avatarUrl && (
+          <img src={user.avatarUrl} alt={user.nickname} width={64} height={64} style={{ borderRadius: '50%' }} />
+        )}
+        <div style={{ flex: 1 }}>
+          <div style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>{user.nickname}</div>
+          <div style={{ fontSize: '0.8rem', color: '#888' }}>ID: {user.userId}</div>
+          {details && (
+            <>
+              <div style={{ fontSize: '0.85rem', marginTop: 4 }}>
+                <a href={details.profileUrl} target="_blank" rel="noopener noreferrer">Steam profile ↗</a>
+              </div>
+              <div style={{ fontSize: '0.75rem', color: '#888' }}>
+                Member since: {new Date(details.createdAt).toLocaleDateString()}
+                {details.lastLoginAt && ` · Last login: ${new Date(details.lastLoginAt).toLocaleString()}`}
+              </div>
+            </>
+          )}
+        </div>
+        <button onClick={onLogout}>Logout</button>
+      </div>
+    </section>
+  );
+}
+
 function CallbackContent() {
   const searchParams = useSearchParams();
   const [status, setStatus] = useState('Processing...');
-  const [accessToken, setAccessToken] = useState<string | null>(null);
-  const [loggedOut, setLoggedOut] = useState(false);
+  const [user, setUser] = useState<UserBasicInfo | null>(null);
+  const [details, setDetails] = useState<UserPrivateProfile | null>(null);
 
   useEffect(() => {
     const login = searchParams.get('login');
@@ -40,59 +83,54 @@ function CallbackContent() {
         return;
       }
 
-      const data = (await res.json()) as { accessToken: string };
-      setAccessToken(data.accessToken);
-      setStatus('Cookie round-trip confirmed');
+      const data = (await res.json()) as { accessToken: string; user: UserBasicInfo };
+      setUser(data.user);
+      setStatus('Authenticated — fetching profile details...');
+      await fetchDetails(data.accessToken);
     } catch (err) {
       setStatus(`Refresh error — ${String(err)}`);
     }
   }
 
-  async function callLogout() {
-    setStatus('Calling POST /api/auth/logout...');
+  async function fetchDetails(token: string) {
     try {
-      const res = await fetch(`${API_URL}/api/auth/logout`, {
-        method: 'POST',
-        credentials: 'include',
+      const res = await fetch(`${API_URL}/api/profile/details`, {
+        headers: { Authorization: `Bearer ${token}` },
       });
 
       if (!res.ok) {
-        setStatus(`Logout failed — ${res.status} ${res.statusText}`);
+        setStatus(`Authenticated (profile details unavailable — ${res.status})`);
         return;
       }
 
-      setAccessToken(null);
-      setLoggedOut(true);
-      setStatus('Logged out — cookie cleared');
+      const data = (await res.json()) as UserPrivateProfile;
+      setDetails(data);
+      setStatus('Authenticated');
     } catch (err) {
-      setStatus(`Logout error — ${String(err)}`);
+      setStatus(`Authenticated (profile details error — ${String(err)})`);
+    }
+  }
+
+  async function handleLogout() {
+    try {
+      await fetch(`${API_URL}/api/auth/logout`, { method: 'POST', credentials: 'include' });
+    } finally {
+      setUser(null);
+      setDetails(null);
+      setStatus('Logged out');
+      window.location.href = '/';
     }
   }
 
   return (
-    <main>
+    <main style={{ fontFamily: 'sans-serif', maxWidth: 600, margin: '2rem auto', padding: '0 1rem' }}>
       <h1>Auth Callback</h1>
 
-      <section>
-        <strong>Status:</strong>
-        <pre style={{ background: '#f0f0f0', padding: '1rem', whiteSpace: 'pre-wrap' }}>{status}</pre>
-      </section>
+      <p style={{ color: status.startsWith('Error') || status.startsWith('Refresh failed') ? 'crimson' : '#555' }}>
+        {status}
+      </p>
 
-      {accessToken && (
-        <section>
-          <strong>Access token (JWT):</strong>
-          <pre style={{ background: '#e8f5e9', padding: '1rem', wordBreak: 'break-all', whiteSpace: 'pre-wrap' }}>
-            {accessToken}
-          </pre>
-          <button onClick={callLogout}>Logout</button>
-        </section>
-      )}
-
-      {loggedOut && (
-        <p>
-          <a href="/">Back to login</a>
-        </p>
-      )}
+      {user && <UserCard user={user} details={details} onLogout={handleLogout} />}
     </main>
   );
 }
