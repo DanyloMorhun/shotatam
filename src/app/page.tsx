@@ -18,6 +18,12 @@ export default function HomePage() {
     silentRefresh();
   }, []);
 
+  async function handleLogin() {
+    const res = await fetch(`${API_URL}/api/auth/steam?age=1&terms=1&privacy=1`, { redirect: 'manual' });
+    const location = res.headers.get('location');
+    if (location) window.location.href = location;
+  }
+
   async function silentRefresh() {
     try {
       const res = await fetch(`${API_URL}/api/auth/refresh`, {
@@ -61,9 +67,7 @@ export default function HomePage() {
       ) : (
         <>
           <p>Click the button to log in via Steam.</p>
-          <a href={`${API_URL}/api/auth/steam?age=1&terms=1&privacy=1`}>
-            <button>Login with Steam</button>
-          </a>
+          <button onClick={handleLogin}>Login with Steam</button>
         </>
       )}
     </main>
