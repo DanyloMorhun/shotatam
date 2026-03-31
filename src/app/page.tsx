@@ -34,6 +34,19 @@ export default function HomePage() {
     }
   }
 
+  async function handleSteamLogin() {
+    const res = await fetch(`${API_URL}/api/auth/steam`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ age: true, terms: true, privacy: true }),
+    });
+    if (res.ok) {
+      const { url } = (await res.json()) as { url: string };
+      window.location.href = url;
+    }
+  }
+
   async function handleLogout() {
     await fetch(`${API_URL}/api/auth/logout`, { method: 'POST', credentials: 'include' });
     setUser(null);
@@ -61,9 +74,7 @@ export default function HomePage() {
       ) : (
         <>
           <p>Click the button to log in via Steam.</p>
-          <a href={`${API_URL}/api/auth/steam?age=1&terms=1&privacy=1`}>
-            <button>Login with Steam</button>
-          </a>
+          <button onClick={handleSteamLogin}>Login with Steam</button>
         </>
       )}
     </main>
