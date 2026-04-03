@@ -83,10 +83,10 @@ function CallbackContent() {
         return;
       }
 
-      const data = (await res.json()) as { accessToken: string; user: UserBasicInfo };
-      setUser(data.user);
+      const { result } = (await res.json()) as { result: { accessToken: string; user: UserBasicInfo } };
+      setUser(result.user);
       setStatus('Authenticated — fetching profile details...');
-      await fetchDetails(data.accessToken);
+      await fetchDetails(result.accessToken);
     } catch (err) {
       setStatus(`Refresh error — ${String(err)}`);
     }
@@ -103,8 +103,8 @@ function CallbackContent() {
         return;
       }
 
-      const data = (await res.json()) as UserPrivateProfile;
-      setDetails(data);
+      const { result } = (await res.json()) as { result: UserPrivateProfile };
+      setDetails(result);
       setStatus('Authenticated');
     } catch (err) {
       setStatus(`Authenticated (profile details error — ${String(err)})`);

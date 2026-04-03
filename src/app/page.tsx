@@ -26,8 +26,8 @@ export default function HomePage() {
       });
 
       if (res.ok) {
-        const data = (await res.json()) as { accessToken: string; user: UserBasicInfo };
-        setUser(data.user);
+        const { result } = (await res.json()) as { result: { accessToken: string; user: UserBasicInfo } };
+        setUser(result.user);
       }
     } finally {
       setChecking(false);
@@ -42,8 +42,8 @@ export default function HomePage() {
       body: JSON.stringify({ age: true, terms: true, privacy: true }),
     });
     if (res.ok) {
-      const { url } = (await res.json()) as { url: string };
-      window.location.href = url;
+      const { result } = (await res.json()) as { result: { url: string } };
+      window.location.href = result.url;
     }
   }
 
