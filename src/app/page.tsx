@@ -11,36 +11,21 @@ interface UserBasicInfo {
   avatarUrl: string | null;
 }
 
-// ── helpers ──────────────────────────────────────────────────────────────────
-
-function getSessionId(): string {
-  const KEY = 'test_session_id';
-  let id = localStorage.getItem(KEY);
-  if (!id) {
-    id = crypto.randomUUID();
-    localStorage.setItem(KEY, id);
-  }
-  return id;
-}
-
 // ── sub-components ───────────────────────────────────────────────────────────
 
 function OnlineCounter() {
-  const [onlineHttp, setOnlineHttp] = useState<number | null>(null);
-  const [onlineSocket, setOnlineSocket] = useState<number | null>(null);
+  const [online, setOnline] = useState<number | null>(null);
   const [socketConnected, setSocketConnected] = useState(false);
-  const [hbActive, setHbActive] = useState(false);
   const [lastHb, setLastHb] = useState<string>('—');
   const [log, setLog] = useState<{ msg: string; ok: boolean }[]>([]);
   const hbRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const socketRef = useRef<Socket | null>(null);
-  const sessionId = useRef<string>('');
 
   useEffect(() => {
-    sessionId.current = getSessionId();
+    const s = connectSocket();
     return () => {
       hbRef.current && clearInterval(hbRef.current);
-      socketRef.current?.disconnect();
+      s.disconnect();
     };
   }, []);
 
@@ -48,103 +33,82 @@ function OnlineCounter() {
     setLog((prev) => [...prev.slice(-49), { msg: `[${new Date().toLocaleTimeString()}] ${msg}`, ok }]);
   }
 
-  async function sendHeartbeat() {
-    try {
-      const res = await fetch(`${API_URL}/api/system/heartbeat`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sessionId: sessionId.current }),
-      });
-      if (res.status === 204) {
+  function startHeartbeatLoop(s: Socket) {
+    hbRef.current && clearInterval(hbRef.current);
+    hbRef.current = setInterval(() => {
+      if (!document.hidden) {
+        s.emit('heartbeat');
         setLastHb(new Date().toLocaleTimeString());
-        addLog('Heartbeat sent ✓');
-      } else {
-        addLog(`Heartbeat ${res.status}`, false);
+        addLog('heartbeat emitted');
       }
-    } catch (e) {
-      addLog(`Heartbeat error: ${e}`, false);
-    }
+    }, 30_000);
   }
 
-  function startHeartbeat() {
-    if (hbRef.current) return;
-    sendHeartbeat();
-    hbRef.current = setInterval(sendHeartbeat, 30_000);
-    setHbActive(true);
-    addLog('Heartbeat started (every 30s)');
-    connectSocket();
-  }
-
-  function stopHeartbeat() {
-    if (hbRef.current) { clearInterval(hbRef.current); hbRef.current = null; }
-    setHbActive(false);
-    addLog('Heartbeat stopped');
-  }
-
-  function connectSocket() {
-    if (socketRef.current) return;
+  function connectSocket(): Socket {
     const base = API_URL?.replace('/api', '') ?? '';
     const s = io(`${base}/system`, { transports: ['websocket'] });
     socketRef.current = s;
 
-    s.on('connect', () => { setSocketConnected(true); addLog(`Socket connected (${s.id})`); });
-    s.on('disconnect', () => { setSocketConnected(false); addLog('Socket disconnected', false); });
+    s.on('connect', () => {
+      setSocketConnected(true);
+      addLog(`Socket connected (${s.id})`);
+      startHeartbeatLoop(s);
+    });
+
+    s.on('disconnect', () => {
+      setSocketConnected(false);
+      addLog('Socket disconnected', false);
+      hbRef.current && clearInterval(hbRef.current);
+    });
+
     s.on('system:online', (d: { online: number }) => {
-      setOnlineSocket(d.online);
+      setOnline(d.online);
       addLog(`system:online → ${d.online}`);
     });
+
     s.on('server:time', (d: { timestamp: number }) => {
       addLog(`server:time → ${new Date(d.timestamp).toLocaleTimeString()}`);
     });
-  }
 
-  async function fetchOnline() {
-    try {
-      const res = await fetch(`${API_URL}/api/system/online`);
-      const json = await res.json();
-      const n: number = json?.result?.online ?? json?.online;
-      setOnlineHttp(n);
-      addLog(`GET /system/online → ${n}`);
-    } catch (e) {
-      addLog(`GET /system/online error: ${e}`, false);
-    }
+    // resume/pause heartbeats with tab visibility
+    const onVisibility = () => {
+      if (!document.hidden) {
+        s.emit('heartbeat');
+        setLastHb(new Date().toLocaleTimeString());
+        addLog('Tab visible — heartbeat emitted');
+        startHeartbeatLoop(s);
+      } else {
+        hbRef.current && clearInterval(hbRef.current);
+        addLog('Tab hidden — heartbeats paused');
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    s.on('disconnect', () => document.removeEventListener('visibilitychange', onVisibility));
+
+    return s;
   }
 
   const cellStyle: React.CSSProperties = {
     border: '1px solid #ddd', borderRadius: 8, padding: '1rem', marginBottom: '0.5rem',
-  };
-  const btnStyle: React.CSSProperties = {
-    padding: '4px 12px', fontFamily: 'monospace', cursor: 'pointer', marginRight: 6, borderRadius: 4, border: '1px solid #ccc',
   };
 
   return (
     <section style={{ marginTop: '2rem', borderTop: '1px solid #eee', paddingTop: '1rem' }}>
       <h2 style={{ marginBottom: '0.75rem' }}>Online Counter Test</h2>
 
-      <p style={{ fontSize: '0.75rem', color: '#888', marginBottom: '0.75rem' }}>
-        Session ID: <code>{sessionId.current}</code>
-      </p>
-
-      {/* Heartbeat + counts */}
       <div style={cellStyle}>
-        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap', marginBottom: '0.5rem' }}>
-          <button style={btnStyle} onClick={startHeartbeat} disabled={hbActive}>
-            {hbActive ? '● Heartbeat running' : 'Start heartbeat'}
-          </button>
-          <button style={btnStyle} onClick={stopHeartbeat} disabled={!hbActive}>Stop</button>
-          <button style={btnStyle} onClick={fetchOnline}>Poll /system/online</button>
-          <span style={{ fontSize: '0.8rem', color: socketConnected ? 'green' : '#aaa' }}>
-            {socketConnected ? '● Socket connected' : '○ Socket disconnected'}
+        <div style={{ display: 'flex', gap: '2rem', alignItems: 'center', flexWrap: 'wrap' }}>
+          <div style={{ fontSize: '2rem', fontWeight: 'bold' }}>{online ?? '—'} <span style={{ fontSize: '1rem', color: '#888' }}>online</span></div>
+          <span style={{ fontSize: '0.85rem', color: socketConnected ? 'green' : '#aaa' }}>
+            {socketConnected ? '● connected' : '○ disconnected'}
           </span>
+          <span style={{ fontSize: '0.8rem', color: '#aaa' }}>Last heartbeat: {lastHb}</span>
         </div>
-        <div style={{ display: 'flex', gap: '2rem', fontSize: '0.9rem' }}>
-          <div>HTTP count: <strong>{onlineHttp ?? '—'}</strong></div>
-          <div>Socket count: <strong>{onlineSocket ?? '—'}</strong></div>
-          <div style={{ color: '#888' }}>Last heartbeat: {lastHb}</div>
-        </div>
+        <p style={{ fontSize: '0.75rem', color: '#aaa', marginTop: '0.5rem' }}>
+          Heartbeats sent every 30s while tab is active. Paused when tab is hidden (AFK simulation).
+        </p>
       </div>
 
-      {/* Log */}
       <div style={{ ...cellStyle, background: '#f8f8f8' }}>
         <strong style={{ fontSize: '0.9rem' }}>Log</strong>
         <div style={{ marginTop: '0.5rem', height: 160, overflowY: 'auto', fontFamily: 'monospace', fontSize: '0.75rem' }}>
