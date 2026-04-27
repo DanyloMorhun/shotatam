@@ -1,0 +1,38 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    ports:
+      - '3010:3010'
+    volumes:
+      - .:/app # mount source for hot reload
+      - /app/node_modules # keep container's node_modules isolated
+      - /app/.next # keep .next cache inside container
+    env_file:
+      - .env.local
+    environment:
+      WATCHPACK_POLLING: 'true'
+      NEXT_TELEMETRY_DISABLED: '1'
+    restart: always
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - '8080:80'
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - app
+    restart: always
+
+  ngrok:
+    image: ngrok/ngrok:latest
+    ports:
+      - '4040:4040' # ngrok web inspector UI
+    command: http nginx:80 --domain=${NGROK_DOMAIN}
+    env_file:
+      - .env
+    depends_on:
+      - nginx
+    restart: always

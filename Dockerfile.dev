@@ -1,0 +1,18 @@
+FROM node:20-alpine
+
+WORKDIR /app
+
+RUN npm install -g pnpm
+
+# Install dependencies layer (cached unless package files change)
+COPY package.json pnpm-lock.yaml ./
+RUN pnpm install
+
+# Source is mounted as a volume at runtime — no COPY src needed
+EXPOSE 3010
+
+# Enable polling so file-watcher works inside Docker
+ENV WATCHPACK_POLLING=true
+ENV NEXT_TELEMETRY_DISABLED=1
+
+CMD ["pnpm", "dev", "-p", "3010"]
