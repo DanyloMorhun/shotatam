@@ -5,15 +5,6 @@ services:
       dockerfile: Dockerfile.dev
     ports:
       - '3010:3010'
-    volumes:
-      - .:/app # mount source for hot reload
-      - /app/node_modules # keep container's node_modules isolated
-      - /app/.next # keep .next cache inside container
-    env_file:
-      - .env.local
-    environment:
-      WATCHPACK_POLLING: 'true'
-      NEXT_TELEMETRY_DISABLED: '1'
     restart: always
 
   nginx:

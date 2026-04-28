@@ -4,15 +4,16 @@ WORKDIR /app
 
 RUN npm install -g pnpm
 
-# Install dependencies layer (cached unless package files change)
 COPY package.json pnpm-lock.yaml ./
-RUN pnpm install
+RUN pnpm install --frozen-lockfile
 
-# Source is mounted as a volume at runtime — no COPY src needed
-EXPOSE 3010
+COPY . .
 
-# Enable polling so file-watcher works inside Docker
-ENV WATCHPACK_POLLING=true
+RUN pnpm build
+
+ENV PORT=3010
 ENV NEXT_TELEMETRY_DISABLED=1
 
-CMD ["pnpm", "dev", "-p", "3010"]
+EXPOSE 3010
+
+CMD ["pnpm", "start"]

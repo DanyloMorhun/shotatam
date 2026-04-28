@@ -161,7 +161,7 @@ function WalletEventListener({ token }: { token: string }) {
   const [connected, setConnected] = useState(false);
 
   useEffect(() => {
-    const base = API_URL?.replace('/api', '') ?? '';
+    const base = new URL(API_URL ?? '').origin;
     const s = io(`${base}/notifications`, {
       transports: ['websocket'],
       auth: { token },
@@ -212,7 +212,7 @@ function OnlineCounter() {
   const [log, setLog] = useState<{ msg: string; ok: boolean }[]>([]);
 
   useEffect(() => {
-    const base = API_URL?.replace('/api', '') ?? '';
+    const base = new URL(API_URL ?? '').origin;
     const s = io(`${base}/system`, { transports: ['websocket'] });
 
     function addLog(msg: string, ok = true) {
@@ -328,6 +328,8 @@ export default function HomePage() {
 
       <nav style={{ marginBottom: '1rem', display: 'flex', gap: '0.5rem' }}>
         <button onClick={() => { window.location.href = '/main-ws'; }}>→ /main-ws</button>
+        <button onClick={() => { window.location.href = '/feed'; }}>→ /feed</button>
+        <button onClick={() => { window.location.href = '/lotteries'; }}>→ /lotteries</button>
       </nav>
 
       {user ? (

@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { io } from 'socket.io-client';
 
-const BASE_URL = (process.env.NEXT_PUBLIC_API_URL ?? '').replace('/api', '');
+const BASE_URL = new URL(process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost').origin;
 
 // A real duplicate for main:order means two fires within 2s (one per lifecycle change is the rule).
 // For main:lottery_updated the 100ms debounce intentionally produces consecutive batches when many
