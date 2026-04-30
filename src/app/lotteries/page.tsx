@@ -10,6 +10,7 @@ interface LotteryPrize {
   fullName: string;
   name: string;
   skinName: string;
+  type: string;
   quality: string;
   price: number;
   iconUrl: string;
@@ -23,7 +24,7 @@ interface Lottery {
   ticketCount: number;
   ticketPrice: number;
   soldTickets: number;
-  quickBuySteps: number[];
+  quickBuySteps?: number[] | null;
   endsAt: string;
   prize: LotteryPrize | null;
 }
@@ -115,6 +116,7 @@ function BuyPanel({ lottery, token, onDone }: { lottery: Lottery; token: string 
             {lottery.prize?.skinName || lottery.prize?.fullName || 'Unknown prize'}
           </div>
           <div style={{ fontSize: '0.8rem', color: '#888', marginTop: 2 }}>
+            {lottery.prize?.type && <span style={{ color: '#a78bfa', marginRight: 6 }}>{lottery.prize.type}</span>}
             {lottery.prize?.quality} · ${(lottery.prize?.price ?? 0) / 100} prize · ${lottery.ticketPrice / 100} / ticket
           </div>
         </div>
@@ -133,7 +135,7 @@ function BuyPanel({ lottery, token, onDone }: { lottery: Lottery; token: string 
 
       {/* Quick-pick buttons */}
       <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.75rem' }}>
-        {lottery.quickBuySteps.map(n => (
+        {(lottery.quickBuySteps?.length ? lottery.quickBuySteps : [1, 5, 10, 25, 50].filter(n => n <= available)).map(n => (
           <button key={n} style={btnStyle(qty === n)} onClick={() => setQty(n)}>{n}</button>
         ))}
         <input
@@ -200,9 +202,14 @@ function LotteryCard({ lottery, selected, onSelect }: { lottery: Lottery; select
       <div style={{ fontWeight: 600, fontSize: '0.9rem', marginBottom: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
         {lottery.prize?.skinName || lottery.prize?.fullName || 'Unknown'}
       </div>
-      <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: 8 }}>
+      <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: 4 }}>
         ${(lottery.prize?.price ?? 0) / 100} · ${lottery.ticketPrice / 100}/ticket
       </div>
+      {lottery.prize?.type && (
+        <div style={{ fontSize: '0.7rem', color: '#a78bfa', marginBottom: 6 }}>
+          {lottery.prize.type}
+        </div>
+      )}
 
       {/* fill bar */}
       <div style={{ height: 4, background: '#222', borderRadius: 2 }}>
@@ -225,12 +232,18 @@ export default function LotteriesPage() {
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<Lottery | null>(null);
   const [tierFilter, setTierFilter] = useState<string>('all');
+  const [skinTypeFilter, setSkinTypeFilter] = useState<string>('all');
+  const [skinTypes, setSkinTypes] = useState<string[]>([]);
   const [search, setSearch] = useState('');
 
   useEffect(() => {
     void silentRefresh();
-    void fetchLotteries();
+    void fetchSkinTypes();
   }, []);
+
+  useEffect(() => {
+    void fetchLotteries();
+  }, [skinTypeFilter]);
 
   async function silentRefresh() {
     try {
@@ -243,11 +256,23 @@ export default function LotteriesPage() {
     } catch { /* no session */ }
   }
 
+  async function fetchSkinTypes() {
+    try {
+      const res = await fetch(`${API_URL}/api/lotteries/skin-type-filters`);
+      if (res.ok) {
+        const { result } = await res.json() as { result: string[] };
+        setSkinTypes(result);
+      }
+    } catch { /* ignore */ }
+  }
+
   async function fetchLotteries() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${API_URL}/api/lotteries?limit=50`);
+      const params = new URLSearchParams({ limit: '50' });
+      if (skinTypeFilter !== 'all') params.set('skinType', skinTypeFilter);
+      const res = await fetch(`${API_URL}/api/lotteries?${params.toString()}`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const { result } = await res.json() as { result: PaginatedResult };
       setLotteries(result.data);
@@ -268,11 +293,19 @@ export default function LotteriesPage() {
     return l.id.toLowerCase().includes(q) || prizeName.includes(q);
   });
 
-  const tabBtn = (t: string): React.CSSProperties => ({
+  const filterBtn = (active: boolean): React.CSSProperties => ({
     padding: '4px 14px', cursor: 'pointer', borderRadius: 4,
     border: '1px solid #444',
-    background: tierFilter === t ? '#2563eb' : '#1a1a1a',
-    color: tierFilter === t ? '#fff' : '#aaa',
+    background: active ? '#2563eb' : '#1a1a1a',
+    color: active ? '#fff' : '#aaa',
+    fontFamily: 'monospace', fontSize: '0.82rem',
+  });
+
+  const skinTypeBtn = (active: boolean): React.CSSProperties => ({
+    padding: '4px 14px', cursor: 'pointer', borderRadius: 4,
+    border: '1px solid #444',
+    background: active ? '#7c3aed' : '#1a1a1a',
+    color: active ? '#fff' : '#aaa',
     fontFamily: 'monospace', fontSize: '0.82rem',
   });
 
@@ -297,8 +330,10 @@ export default function LotteriesPage() {
       </div>
 
       {/* tier filter + search */}
-      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
-        {TIERS.map(t => <button key={t} style={tabBtn(t)} onClick={() => setTierFilter(t)}>{t}</button>)}
+      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
+        {TIERS.map(t => (
+          <button key={t} style={filterBtn(tierFilter === t)} onClick={() => setTierFilter(t)}>{t}</button>
+        ))}
         <input
           type="text"
           placeholder="Search by ID or prize name…"
@@ -314,6 +349,17 @@ export default function LotteriesPage() {
           {filtered.length} lotter{filtered.length !== 1 ? 'ies' : 'y'}
         </span>
       </div>
+
+      {/* skin type filter */}
+      {skinTypes.length > 0 && (
+        <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
+          <span style={{ color: '#666', fontSize: '0.78rem', marginRight: 2 }}>skin type:</span>
+          <button style={skinTypeBtn(skinTypeFilter === 'all')} onClick={() => setSkinTypeFilter('all')}>all</button>
+          {skinTypes.map(t => (
+            <button key={t} style={skinTypeBtn(skinTypeFilter === t)} onClick={() => setSkinTypeFilter(t)}>{t}</button>
+          ))}
+        </div>
+      )}
 
       {error && <div style={{ color: '#f87171', marginBottom: '0.75rem' }}>{error}</div>}
 
