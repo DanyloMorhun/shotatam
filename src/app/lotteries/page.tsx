@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 
 import { API_URL } from '@/config';
 
@@ -225,7 +224,6 @@ export default function LotteriesPage() {
   const [lotteries, setLotteries] = useState<Lottery[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const router = useRouter();
   const [selected, setSelected] = useState<Lottery | null>(null);
   const [tierFilter, setTierFilter] = useState<string>('all');
   const [skinTypeFilter, setSkinTypeFilter] = useState<string>('all');
@@ -316,9 +314,6 @@ export default function LotteriesPage() {
             ? <span style={{ color: '#4ade80' }}>● {username}</span>
             : <span style={{ color: '#f87171' }}>○ not logged in — <a href="/" style={{ color: '#60a5fa' }}>go log in</a></span>
           }
-          <button onClick={() => router.push('/')} style={{ padding: '3px 10px', cursor: 'pointer', background: '#1a1a1a', border: '1px solid #444', color: '#ccc', borderRadius: 4 }}>
-            ← home
-          </button>
           <button onClick={fetchLotteries} disabled={loading} style={{ padding: '3px 10px', cursor: 'pointer', background: '#1a1a1a', border: '1px solid #444', color: '#ccc', borderRadius: 4 }}>
             {loading ? '…' : '↺ refresh'}
           </button>

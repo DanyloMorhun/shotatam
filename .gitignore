@@ -1,6 +1,3 @@
 .next/
 node_modules/
-.env.local
-.env.production
-.env
-
+.workspace/

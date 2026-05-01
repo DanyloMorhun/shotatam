@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
 import { io } from 'socket.io-client';
 
 import { API_URL } from '@/config';
@@ -326,14 +325,6 @@ export default function HomePage() {
   return (
     <main style={{ fontFamily: 'sans-serif', maxWidth: 600, margin: '2rem auto', padding: '0 1rem' }}>
       <h1>SkinSlott Auth Test</h1>
-
-      <nav style={{ marginBottom: '1rem', display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-        {['/main-ws', '/feed', '/lotteries', '/prize-pool'].map(href => (
-          <Link key={href} href={href} style={{ padding: '4px 12px', borderRadius: 4, border: '1px solid #ccc', textDecoration: 'none', color: 'inherit', fontSize: '0.9rem' }}>
-            → {href}
-          </Link>
-        ))}
-      </nav>
 
       {user ? (
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', border: '1px solid #ddd', borderRadius: 8, padding: '1rem' }}>
