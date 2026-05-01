@@ -44,7 +44,7 @@ const TIER_COLOR: Record<string, string> = { low: '#6b7280', mid: '#2563eb', hig
 
 function EntryCard({ entry }: { entry: FeedEntry }) {
   return (
-    <div style={{ padding: '0.5rem 0.75rem', borderRadius: 6, background: '#f9f9f9', border: '1px solid #e5e7eb', marginBottom: 6 }}>
+    <div style={{ padding: '0.5rem 0.75rem', borderRadius: 6, background: '#1a1a1a', border: '1px solid #333', marginBottom: 6 }}>
       <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: 4 }}>
         <span style={{ fontSize: '0.7rem', fontWeight: 700, color: TIER_COLOR[entry.tier] ?? '#333', textTransform: 'uppercase', letterSpacing: 1 }}>
           {entry.tier}
@@ -55,7 +55,7 @@ function EntryCard({ entry }: { entry: FeedEntry }) {
       {entry.winner?.isServer ? (
         <div style={{ fontSize: '0.72rem', color: '#d97706' }}>server win</div>
       ) : entry.winner ? (
-        <div style={{ fontSize: '0.72rem', color: '#555' }}>
+        <div style={{ fontSize: '0.72rem', color: '#aaa' }}>
           winner: <strong>{entry.winner.username}</strong> · {entry.winner.ticketsCount} ticket{entry.winner.ticketsCount !== 1 ? 's' : ''} · steam:{entry.winner.steamId}
         </div>
       ) : (
@@ -99,8 +99,8 @@ function RestPanel() {
   const btnStyle = (active: boolean): React.CSSProperties => ({
     padding: '4px 14px', cursor: 'pointer', borderRadius: 4,
     border: '1px solid #d1d5db',
-    background: active ? '#2563eb' : '#fff',
-    color: active ? '#fff' : '#333',
+    background: active ? '#2563eb' : '#1a1a1a',
+    color: active ? '#fff' : '#aaa',
     fontFamily: 'monospace',
   });
 
@@ -117,8 +117,8 @@ function RestPanel() {
         {entries && <span style={{ fontSize: '0.75rem', color: '#555' }}>{entries.length} entr{entries.length !== 1 ? 'ies' : 'y'}</span>}
       </div>
 
-      <div style={{ flex: 1, overflowY: 'auto', border: '1px solid #ddd', borderRadius: 8, padding: '0.5rem' }}>
-        {!entries && !loading && <div style={{ color: '#aaa', textAlign: 'center', padding: '1rem' }}>No data yet</div>}
+      <div style={{ flex: 1, overflowY: 'auto', border: '1px solid #333', borderRadius: 8, padding: '0.5rem', background: '#111' }}>
+        {!entries && !loading && <div style={{ color: '#555', textAlign: 'center', padding: '1rem' }}>No data yet</div>}
         {entries?.length === 0 && <div style={{ color: '#aaa', textAlign: 'center', padding: '1rem' }}>Empty — no completed lotteries found</div>}
         {entries?.map(e => <EntryCard key={e.lotteryId} entry={e} />)}
       </div>
@@ -155,11 +155,11 @@ function WsPanel() {
     <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
       <h2 style={{ margin: 0, fontSize: '1rem', fontFamily: 'sans-serif' }}>WebSocket — /feed namespace</h2>
 
-      <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap', padding: '0.5rem 0.75rem', background: '#f5f5f5', borderRadius: 8 }}>
+      <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap', padding: '0.5rem 0.75rem', background: '#1a1a1a', borderRadius: 8 }}>
         <span style={{ fontWeight: 'bold', color: connected ? 'green' : 'crimson' }}>
           {connected ? '● connected' : '○ disconnected'}
         </span>
-        <span style={{ fontSize: '0.8rem', color: '#555' }}>
+        <span style={{ fontSize: '0.8rem', color: '#aaa' }}>
           feed:update ×{events.length} · {totalEntries} total entr{totalEntries !== 1 ? 'ies' : 'y'}
         </span>
         {events.length > 0 && (
@@ -169,7 +169,7 @@ function WsPanel() {
         )}
       </div>
 
-      <div style={{ flex: 1, overflowY: 'auto', border: '1px solid #ddd', borderRadius: 8, padding: '0.5rem' }}>
+      <div style={{ flex: 1, overflowY: 'auto', border: '1px solid #333', borderRadius: 8, padding: '0.5rem', background: '#111' }}>
         {events.length === 0 && (
           <div style={{ color: '#aaa', textAlign: 'center', padding: '1rem' }}>
             Waiting for feed:update events…
@@ -196,7 +196,7 @@ export default function FeedPage() {
       <h1 style={{ fontFamily: 'sans-serif', margin: 0 }}>/feed — Live Winnings Feed test</h1>
       <div style={{ display: 'flex', gap: '1.5rem', flex: 1, minHeight: 0 }}>
         <RestPanel />
-        <div style={{ width: 1, background: '#e5e7eb', flexShrink: 0 }} />
+        <div style={{ width: 1, background: '#333', flexShrink: 0 }} />
         <WsPanel />
       </div>
     </main>

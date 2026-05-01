@@ -91,12 +91,12 @@ export default function MainWsPage() {
   const s = {
     page:    { fontFamily: 'monospace', maxWidth: 960, margin: '1.5rem auto', padding: '0 1rem' } as React.CSSProperties,
     heading: { fontFamily: 'sans-serif', marginBottom: '1rem' } as React.CSSProperties,
-    bar:     { display: 'flex', gap: '1.5rem', alignItems: 'center', flexWrap: 'wrap', padding: '0.75rem 1rem', background: '#f5f5f5', borderRadius: 8, marginBottom: '1rem' } as React.CSSProperties,
-    log:     { height: 640, overflowY: 'auto', border: '1px solid #ddd', borderRadius: 8, padding: '0.5rem' } as React.CSSProperties,
+    bar:     { display: 'flex', gap: '1.5rem', alignItems: 'center', flexWrap: 'wrap', padding: '0.75rem 1rem', background: '#1a1a1a', borderRadius: 8, marginBottom: '1rem' } as React.CSSProperties,
+    log:     { height: 640, overflowY: 'auto', border: '1px solid #333', borderRadius: 8, padding: '0.5rem', background: '#111' } as React.CSSProperties,
     empty:   { color: '#aaa', padding: '1rem', textAlign: 'center' as const },
   };
 
-  const entryBg = (e: LogEntry) => e.isBurst ? '#fff5f5' : '#fafafa';
+  const entryBg = (e: LogEntry) => e.isBurst ? '#2a0000' : '#1a1a1a';
   const entryBorder = (e: LogEntry) => e.isBurst ? 'crimson' : e.event === 'main:order' ? '#2563eb' : '#16a34a';
   const eventColor = (e: LogEntry) => e.event === 'main:order' ? '#2563eb' : '#16a34a';
 

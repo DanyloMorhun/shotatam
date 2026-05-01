@@ -225,19 +225,21 @@ export default function LotteriesPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<Lottery | null>(null);
-  const [tierFilter, setTierFilter] = useState<string>('all');
+  const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const [categories, setCategories] = useState<string[]>([]);
   const [skinTypeFilter, setSkinTypeFilter] = useState<string>('all');
   const [skinTypes, setSkinTypes] = useState<string[]>([]);
   const [search, setSearch] = useState('');
 
   useEffect(() => {
     void silentRefresh();
+    void fetchCategories();
     void fetchSkinTypes();
   }, []);
 
   useEffect(() => {
     void fetchLotteries();
-  }, [skinTypeFilter]);
+  }, [categoryFilter, skinTypeFilter]);
 
   async function silentRefresh() {
     try {
@@ -254,8 +256,20 @@ export default function LotteriesPage() {
     try {
       const res = await fetch(`${API_URL}/api/lotteries/skin-type-filters`);
       if (res.ok) {
-        const { result } = await res.json() as { result: string[] };
-        setSkinTypes(result);
+        const data = await res.json();
+        const list: string[] = Array.isArray(data) ? data : Array.isArray(data?.result) ? data.result : [];
+        setSkinTypes(list);
+      }
+    } catch { /* ignore */ }
+  }
+
+  async function fetchCategories() {
+    try {
+      const res = await fetch(`${API_URL}/api/lotteries/categories`);
+      if (res.ok) {
+        const data = await res.json();
+        const list: string[] = Array.isArray(data) ? data : Array.isArray(data?.result) ? data.result : [];
+        setCategories(list);
       }
     } catch { /* ignore */ }
   }
@@ -265,6 +279,7 @@ export default function LotteriesPage() {
     setError(null);
     try {
       const params = new URLSearchParams({ limit: '50' });
+      if (categoryFilter !== 'all') params.set('category', categoryFilter);
       if (skinTypeFilter !== 'all') params.set('skinType', skinTypeFilter);
       const res = await fetch(`${API_URL}/api/lotteries?${params.toString()}`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -277,28 +292,17 @@ export default function LotteriesPage() {
     }
   }
 
-  const TIERS = ['all', 'low', 'mid', 'high'];
-
   const q = search.trim().toLowerCase();
   const filtered = lotteries.filter(l => {
-    if (tierFilter !== 'all' && l.tier !== tierFilter) return false;
     if (!q) return true;
     const prizeName = (l.prize?.fullName ?? '').toLowerCase();
     return l.id.toLowerCase().includes(q) || prizeName.includes(q);
   });
 
-  const filterBtn = (active: boolean): React.CSSProperties => ({
+  const catBtn = (active: boolean): React.CSSProperties => ({
     padding: '4px 14px', cursor: 'pointer', borderRadius: 4,
     border: '1px solid #444',
     background: active ? '#2563eb' : '#1a1a1a',
-    color: active ? '#fff' : '#aaa',
-    fontFamily: 'monospace', fontSize: '0.82rem',
-  });
-
-  const skinTypeBtn = (active: boolean): React.CSSProperties => ({
-    padding: '4px 14px', cursor: 'pointer', borderRadius: 4,
-    border: '1px solid #444',
-    background: active ? '#7c3aed' : '#1a1a1a',
     color: active ? '#fff' : '#aaa',
     fontFamily: 'monospace', fontSize: '0.82rem',
   });
@@ -320,10 +324,11 @@ export default function LotteriesPage() {
         </div>
       </div>
 
-      {/* tier filter + search */}
-      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
-        {TIERS.map(t => (
-          <button key={t} style={filterBtn(tierFilter === t)} onClick={() => setTierFilter(t)}>{t}</button>
+      {/* category filter + search */}
+      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
+        <button style={catBtn(categoryFilter === 'all')} onClick={() => setCategoryFilter('all')}>all</button>
+        {Array.isArray(categories) && categories.map(c => (
+          <button key={c} style={catBtn(categoryFilter === c)} onClick={() => setCategoryFilter(c)}>{c}</button>
         ))}
         <input
           type="text"
@@ -344,10 +349,10 @@ export default function LotteriesPage() {
       {/* skin type filter */}
       {skinTypes.length > 0 && (
         <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
-          <span style={{ color: '#666', fontSize: '0.78rem', marginRight: 2 }}>skin type:</span>
-          <button style={skinTypeBtn(skinTypeFilter === 'all')} onClick={() => setSkinTypeFilter('all')}>all</button>
+          <span style={{ color: '#666', fontSize: '0.78rem' }}>skin type:</span>
+          <button style={catBtn(skinTypeFilter === 'all')} onClick={() => setSkinTypeFilter('all')}>all</button>
           {skinTypes.map(t => (
-            <button key={t} style={skinTypeBtn(skinTypeFilter === t)} onClick={() => setSkinTypeFilter(t)}>{t}</button>
+            <button key={t} style={catBtn(skinTypeFilter === t)} onClick={() => setSkinTypeFilter(t)}>{t}</button>
           ))}
         </div>
       )}

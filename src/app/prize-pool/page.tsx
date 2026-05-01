@@ -3,66 +3,44 @@
 import { useEffect, useState } from 'react';
 
 import { API_URL } from '@/config';
-const NORMALIZATION_URL = 'https://divine-spaniel-patient.ngrok-free.app';
-const SKINVEND_MARGIN = 1.05;
-const PRICE_LIMIT_INDEX = 5;
 
-type Status = 'ok' | 'filtered' | 'missing';
+const TIER_COLOR: Record<string, string> = {
+  low: '#6b7280',
+  mid: '#2563eb',
+  high: '#d97706',
+  mystery: '#7c3aed',
+};
 
-interface PrizeRow {
-  lotteryId: string;
-  tier: string;
+interface LotteryPrize {
   fullName: string;
-  skinvendPrice: number;
-  effectivePrice: number;
-  priceLimit: number | null;
-  status: Status;
+  skinName: string;
+  price: number;
+}
+
+interface Lottery {
+  id: string;
+  tier: string;
+  ticketCount: number;
+  ticketPrice: number;
+  soldTickets: number;
+  prize: LotteryPrize | null;
 }
 
 export default function PrizePoolPage() {
-  const [rows, setRows] = useState<PrizeRow[]>([]);
+  const [lotteries, setLotteries] = useState<Lottery[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    load();
-  }, []);
+  useEffect(() => { load(); }, []);
 
   async function load() {
     setLoading(true);
     setError(null);
     try {
-      const [lotteriesRes, normRes] = await Promise.all([
-        fetch(`${API_URL}/api/lotteries`),
-        fetch(NORMALIZATION_URL),
-      ]);
-
-      if (!lotteriesRes.ok) throw new Error(`Lotteries API: HTTP ${lotteriesRes.status}`);
-      if (!normRes.ok) throw new Error(`Normalization API: HTTP ${normRes.status}`);
-
-      const { result: lotteriesResult } = await lotteriesRes.json() as { result: { data: { id: string; tier: string; prize: { fullName: string; price: number } | null }[] } };
-      const normBody = await normRes.json();
-
-      const lotteries = lotteriesResult.data;
-      const midData: Record<string, number[]> = normBody.mid_data ?? {};
-
-      const result: PrizeRow[] = lotteries
-        .filter((l) => l.prize !== null)
-        .map((l) => {
-          const { fullName, price } = l.prize!;
-          const entry = midData[fullName];
-          const effectivePrice = price * SKINVEND_MARGIN;
-
-          if (!entry) {
-            return { lotteryId: l.id, tier: l.tier, fullName, skinvendPrice: price, effectivePrice, priceLimit: null, status: 'missing' as Status };
-          }
-
-          const priceLimit = entry[PRICE_LIMIT_INDEX];
-          const status: Status = effectivePrice > priceLimit * SKINVEND_MARGIN ? 'filtered' : 'ok';
-          return { lotteryId: l.id, tier: l.tier, fullName, skinvendPrice: price, effectivePrice, priceLimit, status };
-        });
-
-      setRows(result);
+      const res = await fetch(`${API_URL}/api/lotteries?limit=50`);
+      if (!res.ok) throw new Error(`Lotteries API: HTTP ${res.status}`);
+      const { result } = (await res.json()) as { result: { data: Lottery[] } };
+      setLotteries(result.data.filter((l) => l.prize !== null));
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -70,72 +48,77 @@ export default function PrizePoolPage() {
     }
   }
 
-  const summary = {
-    ok: rows.filter((r) => r.status === 'ok').length,
-    filtered: rows.filter((r) => r.status === 'filtered').length,
-    missing: rows.filter((r) => r.status === 'missing').length,
+  const th: React.CSSProperties = {
+    padding: '8px 12px', textAlign: 'left', borderBottom: '2px solid #333',
+    whiteSpace: 'nowrap', color: '#888', fontSize: '0.8rem',
   };
-
-  const statusColor = (s: Status) => (s === 'ok' ? '#1a7a1a' : 'crimson');
-  const statusLabel = (s: Status) => ({ ok: '✅ OK', filtered: '❌ Should be filtered', missing: '❌ Missing from API' }[s]);
-
-  const th: React.CSSProperties = { padding: '8px 12px', textAlign: 'left', borderBottom: '2px solid #ddd', whiteSpace: 'nowrap' };
-  const td: React.CSSProperties = { padding: '7px 12px', borderBottom: '1px solid #eee', fontSize: '0.85rem' };
+  const td: React.CSSProperties = { padding: '7px 12px', borderBottom: '1px solid #1f1f1f', fontSize: '0.85rem' };
 
   return (
-    <main style={{ fontFamily: 'sans-serif', maxWidth: 1100, margin: '2rem auto', padding: '0 1rem' }}>
-      <h1>Prize Pool Validation</h1>
-      <p style={{ color: '#666', fontSize: '0.9rem' }}>
-        Checks active lottery prizes against the normalization API.<br />
-        Filter condition: <code>skinvendPrice × 1.05 ≤ priceLimit (array[5]) × 1.05</code>
-      </p>
+    <main style={{ fontFamily: 'sans-serif', maxWidth: 1000, margin: '2rem auto', padding: '0 1rem' }}>
+      <h1>Prize Pool</h1>
 
-      <button onClick={load} disabled={loading} style={{ marginBottom: '1rem', padding: '6px 16px' }}>
-        {loading ? 'Loading…' : 'Refresh'}
-      </button>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
+        <button onClick={load} disabled={loading} style={{ padding: '6px 16px' }}>
+          {loading ? 'Loading…' : 'Refresh'}
+        </button>
+        {!loading && !error && (
+          <span style={{ fontSize: '0.85rem', color: '#888' }}>{lotteries.length} active prize{lotteries.length !== 1 ? 's' : ''}</span>
+        )}
+      </div>
 
       {error && <p style={{ color: 'crimson' }}>Error: {error}</p>}
 
       {!loading && !error && (
-        <>
-          <div style={{ display: 'flex', gap: '1.5rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
-            <span style={{ color: '#1a7a1a', fontWeight: 'bold' }}>✅ OK: {summary.ok}</span>
-            <span style={{ color: 'crimson', fontWeight: 'bold' }}>❌ Should be filtered: {summary.filtered}</span>
-            <span style={{ color: 'crimson', fontWeight: 'bold' }}>❌ Missing from API: {summary.missing}</span>
-          </div>
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
+            <thead style={{ background: '#1a1a1a' }}>
+              <tr>
+                <th style={th}>Tier</th>
+                <th style={th}>Skin</th>
+                <th style={{ ...th, textAlign: 'right' }}>Skinvend</th>
+                <th style={{ ...th, textAlign: 'center', width: 32 }}></th>
+                <th style={{ ...th, textAlign: 'right' }}>Client</th>
+                <th style={th}>Lottery ID</th>
+              </tr>
+            </thead>
+            <tbody>
+              {lotteries.map((l) => {
+                const skinvend = l.prize!.price;
+                const client = l.ticketPrice * l.ticketCount;
+                const diff = skinvend - client;
+                const isGood = diff <= 0;
+                const isEqual = diff === 0;
+                const cmp = isEqual ? '=' : isGood ? '<' : '>';
+                const cmpColor = isEqual ? '#888' : isGood ? '#4ade80' : '#f87171';
 
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
-              <thead style={{ background: '#f5f5f5' }}>
-                <tr>
-                  <th style={th}>Status</th>
-                  <th style={th}>Tier</th>
-                  <th style={th}>Skin</th>
-                  <th style={th}>Skinvend price</th>
-                  <th style={th}>× 1.05</th>
-                  <th style={th}>Price limit (array[5]) × 1.05</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((row) => (
-                  <tr key={row.lotteryId} style={{ background: row.status !== 'ok' ? '#fff5f5' : undefined }}>
-                    <td style={{ ...td, color: statusColor(row.status), fontWeight: 'bold' }}>{statusLabel(row.status)}</td>
-                    <td style={td}>{row.tier}</td>
-                    <td style={td}>{row.fullName}</td>
-                    <td style={td}>${row.skinvendPrice}</td>
-                    <td style={{ ...td, color: row.status === 'filtered' ? 'crimson' : undefined }}>
-                      ${row.effectivePrice.toFixed(3)}
+                return (
+                  <tr key={l.id}>
+                    <td style={{ ...td, fontWeight: 700, color: TIER_COLOR[l.tier] ?? '#aaa', textTransform: 'uppercase', fontSize: '0.75rem', letterSpacing: 1 }}>
+                      {l.tier}
                     </td>
-                    <td style={td}>{row.priceLimit !== null ? `$${(row.priceLimit * SKINVEND_MARGIN).toFixed(3)}` : '—'}</td>
+                    <td style={td}>{l.prize!.skinName || l.prize!.fullName}</td>
+                    <td style={{ ...td, textAlign: 'right', fontFamily: 'monospace', color: isGood ? '#4ade80' : '#f87171', fontWeight: 600 }}>
+                      ${(skinvend / 100).toFixed(2)}
+                    </td>
+                    <td style={{ ...td, textAlign: 'center', fontWeight: 700, color: cmpColor, fontSize: '1rem' }}>
+                      {cmp}
+                    </td>
+                    <td style={{ ...td, textAlign: 'right', fontFamily: 'monospace', fontWeight: 600 }}>
+                      ${(client / 100).toFixed(2)}
+                    </td>
+                    <td style={{ ...td, fontFamily: 'monospace', fontSize: '0.72rem', color: '#555' }}>{l.id}</td>
                   </tr>
-                ))}
-                {rows.length === 0 && (
-                  <tr><td colSpan={6} style={{ ...td, color: '#aaa', textAlign: 'center' }}>No active lotteries with prizes</td></tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </>
+                );
+              })}
+              {lotteries.length === 0 && (
+                <tr>
+                  <td colSpan={6} style={{ ...td, color: '#555', textAlign: 'center' }}>No active lotteries with prizes</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       )}
     </main>
   );
