@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { io } from 'socket.io-client';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? '';
+import { API_URL } from '@/config';
 const WS_BASE = API_URL.replace('/api', '');
 
 interface FeedPrize {

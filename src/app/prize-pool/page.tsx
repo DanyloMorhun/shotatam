@@ -2,10 +2,10 @@
 
 import { useEffect, useState } from 'react';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
-const NORMALIZATION_URL = process.env.NEXT_PUBLIC_NORMALIZATION_URL ?? '';
+import { API_URL } from '@/config';
+const NORMALIZATION_URL = 'https://divine-spaniel-patient.ngrok-free.app';
 const SKINVEND_MARGIN = 1.05;
-const PRICE_LIMIT_INDEX = 4;
+const PRICE_LIMIT_INDEX = 5;
 
 type Status = 'ok' | 'filtered' | 'missing';
 
@@ -59,7 +59,7 @@ export default function PrizePoolPage() {
           }
 
           const priceLimit = entry[PRICE_LIMIT_INDEX];
-          const status: Status = effectivePrice > priceLimit ? 'filtered' : 'ok';
+          const status: Status = effectivePrice > priceLimit * SKINVEND_MARGIN ? 'filtered' : 'ok';
           return { lotteryId: l.id, tier: l.tier, fullName, skinvendPrice: price, effectivePrice, priceLimit, status };
         });
 
@@ -88,7 +88,7 @@ export default function PrizePoolPage() {
       <h1>Prize Pool Validation</h1>
       <p style={{ color: '#666', fontSize: '0.9rem' }}>
         Checks active lottery prizes against the normalization API.<br />
-        Filter condition: <code>skinvendPrice × 1.05 ≤ priceLimit (array[4])</code>
+        Filter condition: <code>skinvendPrice × 1.05 ≤ priceLimit (array[5]) × 1.05</code>
       </p>
 
       <button onClick={load} disabled={loading} style={{ marginBottom: '1rem', padding: '6px 16px' }}>
@@ -114,7 +114,7 @@ export default function PrizePoolPage() {
                   <th style={th}>Skin</th>
                   <th style={th}>Skinvend price</th>
                   <th style={th}>× 1.05</th>
-                  <th style={th}>Price limit (array[4])</th>
+                  <th style={th}>Price limit (array[5]) × 1.05</th>
                 </tr>
               </thead>
               <tbody>
@@ -127,7 +127,7 @@ export default function PrizePoolPage() {
                     <td style={{ ...td, color: row.status === 'filtered' ? 'crimson' : undefined }}>
                       ${row.effectivePrice.toFixed(3)}
                     </td>
-                    <td style={td}>{row.priceLimit !== null ? `$${row.priceLimit}` : '—'}</td>
+                    <td style={td}>{row.priceLimit !== null ? `$${(row.priceLimit * SKINVEND_MARGIN).toFixed(3)}` : '—'}</td>
                   </tr>
                 ))}
                 {rows.length === 0 && (

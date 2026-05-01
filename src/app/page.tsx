@@ -1,9 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { io } from 'socket.io-client';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
+import { API_URL } from '@/config';
 
 interface UserBasicInfo {
   userId: string;
@@ -326,10 +327,12 @@ export default function HomePage() {
     <main style={{ fontFamily: 'sans-serif', maxWidth: 600, margin: '2rem auto', padding: '0 1rem' }}>
       <h1>SkinSlott Auth Test</h1>
 
-      <nav style={{ marginBottom: '1rem', display: 'flex', gap: '0.5rem' }}>
-        <button onClick={() => { window.location.href = '/main-ws'; }}>→ /main-ws</button>
-        <button onClick={() => { window.location.href = '/feed'; }}>→ /feed</button>
-        <button onClick={() => { window.location.href = '/lotteries'; }}>→ /lotteries</button>
+      <nav style={{ marginBottom: '1rem', display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+        {['/main-ws', '/feed', '/lotteries', '/prize-pool'].map(href => (
+          <Link key={href} href={href} style={{ padding: '4px 12px', borderRadius: 4, border: '1px solid #ccc', textDecoration: 'none', color: 'inherit', fontSize: '0.9rem' }}>
+            → {href}
+          </Link>
+        ))}
       </nav>
 
       {user ? (
