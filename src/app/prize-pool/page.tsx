@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
-const NORMALIZATION_URL = 'https://divine-spaniel-patient.ngrok-free.app';
+const NORMALIZATION_URL = process.env.NEXT_PUBLIC_NORMALIZATION_URL ?? '';
 const SKINVEND_MARGIN = 1.05;
 const PRICE_LIMIT_INDEX = 4;
 
