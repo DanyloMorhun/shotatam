@@ -162,7 +162,7 @@ function WalletEventListener({ token }: { token: string }) {
   const [connected, setConnected] = useState(false);
 
   useEffect(() => {
-    const base = new URL(API_URL ?? '').origin;
+    const base = new URL(API_URL).origin;
     const s = io(`${base}/notifications`, {
       transports: ['websocket'],
       auth: { token },
@@ -213,7 +213,7 @@ function OnlineCounter() {
   const [log, setLog] = useState<{ msg: string; ok: boolean }[]>([]);
 
   useEffect(() => {
-    const base = new URL(API_URL ?? '').origin;
+    const base = new URL(API_URL).origin;
     const s = io(`${base}/system`, { transports: ['websocket'] });
 
     function addLog(msg: string, ok = true) {

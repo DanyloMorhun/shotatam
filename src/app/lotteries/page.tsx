@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 import { API_URL } from '@/config';
 
@@ -8,13 +9,10 @@ import { API_URL } from '@/config';
 
 interface LotteryPrize {
   fullName: string;
-  name: string;
   skinName: string;
   type: string;
   quality: string;
   price: number;
-  iconUrl: string;
-  backgroundColor: string;
 }
 
 interface Lottery {
@@ -31,9 +29,6 @@ interface Lottery {
 
 interface PaginatedResult {
   data: Lottery[];
-  total: number;
-  page: number;
-  limit: number;
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -165,7 +160,7 @@ function BuyPanel({ lottery, token, onDone }: { lottery: Lottery; token: string 
       {result && (
         <div style={{
           marginTop: '0.6rem', padding: '0.5rem 0.75rem', borderRadius: 6,
-          background: result.ok ? '#0f2' + '1' : '#2a0000',
+          background: result.ok ? '#0d2d16' : '#2a0000',
           color: result.ok ? '#4ade80' : '#f87171',
           fontFamily: 'monospace', fontSize: '0.82rem',
           border: `1px solid ${result.ok ? '#166534' : '#991b1b'}`,
@@ -230,6 +225,7 @@ export default function LotteriesPage() {
   const [lotteries, setLotteries] = useState<Lottery[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
   const [selected, setSelected] = useState<Lottery | null>(null);
   const [tierFilter, setTierFilter] = useState<string>('all');
   const [skinTypeFilter, setSkinTypeFilter] = useState<string>('all');
@@ -320,7 +316,7 @@ export default function LotteriesPage() {
             ? <span style={{ color: '#4ade80' }}>● {username}</span>
             : <span style={{ color: '#f87171' }}>○ not logged in — <a href="/" style={{ color: '#60a5fa' }}>go log in</a></span>
           }
-          <button onClick={() => { window.location.href = '/'; }} style={{ padding: '3px 10px', cursor: 'pointer', background: '#1a1a1a', border: '1px solid #444', color: '#ccc', borderRadius: 4 }}>
+          <button onClick={() => router.push('/')} style={{ padding: '3px 10px', cursor: 'pointer', background: '#1a1a1a', border: '1px solid #444', color: '#ccc', borderRadius: 4 }}>
             ← home
           </button>
           <button onClick={fetchLotteries} disabled={loading} style={{ padding: '3px 10px', cursor: 'pointer', background: '#1a1a1a', border: '1px solid #444', color: '#ccc', borderRadius: 4 }}>

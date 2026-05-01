@@ -40,11 +40,10 @@ export default function PrizePoolPage() {
       if (!lotteriesRes.ok) throw new Error(`Lotteries API: HTTP ${lotteriesRes.status}`);
       if (!normRes.ok) throw new Error(`Normalization API: HTTP ${normRes.status}`);
 
-      const lotteriesBody = await lotteriesRes.json();
+      const { result: lotteriesResult } = await lotteriesRes.json() as { result: { data: { id: string; tier: string; prize: { fullName: string; price: number } | null }[] } };
       const normBody = await normRes.json();
 
-      const lotteries: { id: string; tier: string; prize: { fullName: string; price: number } | null }[] =
-        lotteriesBody.data ?? lotteriesBody;
+      const lotteries = lotteriesResult.data;
       const midData: Record<string, number[]> = normBody.mid_data ?? {};
 
       const result: PrizeRow[] = lotteries

@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { io } from 'socket.io-client';
 
 import { API_URL } from '@/config';
-const WS_BASE = API_URL.replace('/api', '');
+const WS_BASE = new URL(API_URL).origin;
 
 interface FeedPrize {
   name: string;
@@ -17,6 +17,7 @@ interface FeedWinner {
   username: string;
   avatarUrl: string | null;
   ticketsCount: number;
+  isServer: boolean;
 }
 
 interface FeedEntry {
@@ -51,12 +52,14 @@ function EntryCard({ entry }: { entry: FeedEntry }) {
         <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>{entry.prize.name}</span>
         <span style={{ fontSize: '0.72rem', color: '#888', marginLeft: 'auto' }}>{entry.prize.quality}</span>
       </div>
-      {entry.winner ? (
+      {entry.winner?.isServer ? (
+        <div style={{ fontSize: '0.72rem', color: '#d97706' }}>server win</div>
+      ) : entry.winner ? (
         <div style={{ fontSize: '0.72rem', color: '#555' }}>
           winner: <strong>{entry.winner.username}</strong> · {entry.winner.ticketsCount} ticket{entry.winner.ticketsCount !== 1 ? 's' : ''} · steam:{entry.winner.steamId}
         </div>
       ) : (
-        <div style={{ fontSize: '0.72rem', color: '#d97706' }}>server win (no player winner)</div>
+        <div style={{ fontSize: '0.72rem', color: '#888' }}>no winner</div>
       )}
     </div>
   );
