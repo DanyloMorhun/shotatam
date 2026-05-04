@@ -238,6 +238,14 @@ export default function LotteriesPage() {
   }, []);
 
   useEffect(() => {
+    function onTokenRefresh(e: Event) {
+      setToken((e as CustomEvent<string>).detail);
+    }
+    window.addEventListener('access-token', onTokenRefresh);
+    return () => window.removeEventListener('access-token', onTokenRefresh);
+  }, []);
+
+  useEffect(() => {
     void fetchLotteries();
   }, [categoryFilter]);
 
