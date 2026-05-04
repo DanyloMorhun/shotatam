@@ -67,10 +67,15 @@ const LINKS = [
   { href: '/prize-pool', label: 'Prize Pool' },
 ];
 
+const AUTH_LINKS = [
+  { href: '/history', label: 'History' },
+];
+
 export default function Navbar() {
   const pathname = usePathname();
   const [online, setOnline] = useState<number | null>(null);
   const [connected, setConnected] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
     const base = new URL(API_URL).origin;
@@ -79,6 +84,12 @@ export default function Navbar() {
     s.on('disconnect', () => setConnected(false));
     s.on('system:online', (d: { online: number }) => setOnline(d.online));
     return () => { s.disconnect(); };
+  }, []);
+
+  useEffect(() => {
+    fetch(`${API_URL}/api/auth/refresh`, { method: 'POST', credentials: 'include' })
+      .then(res => { if (res.ok) setIsLoggedIn(true); })
+      .catch(() => {});
   }, []);
 
   return (
@@ -94,7 +105,7 @@ export default function Navbar() {
         SkinSlott
       </span>
 
-      {LINKS.map(({ href, label }) => {
+      {[...LINKS, ...(isLoggedIn ? AUTH_LINKS : [])].map(({ href, label }) => {
         const active = pathname === href;
         return (
           <Link
