@@ -239,7 +239,7 @@ export default function LotteriesPage() {
 
   useEffect(() => {
     void fetchLotteries();
-  }, [categoryFilter, skinTypeFilter]);
+  }, [categoryFilter]);
 
   async function silentRefresh() {
     try {
@@ -280,7 +280,6 @@ export default function LotteriesPage() {
     try {
       const params = new URLSearchParams({ limit: '50' });
       if (categoryFilter !== 'all') params.set('category', categoryFilter);
-      if (skinTypeFilter !== 'all') params.set('skinType', skinTypeFilter);
       const res = await fetch(`${API_URL}/api/lotteries?${params.toString()}`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const { result } = await res.json() as { result: PaginatedResult };
@@ -294,6 +293,7 @@ export default function LotteriesPage() {
 
   const q = search.trim().toLowerCase();
   const filtered = lotteries.filter(l => {
+    if (skinTypeFilter !== 'all' && l.prize?.type !== skinTypeFilter) return false;
     if (!q) return true;
     const prizeName = (l.prize?.fullName ?? '').toLowerCase();
     return l.id.toLowerCase().includes(q) || prizeName.includes(q);
