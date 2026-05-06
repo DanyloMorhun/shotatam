@@ -6,7 +6,7 @@ import { API_URL } from '@/config';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-interface InventoryItemSkin {
+interface InventoryItemPrize {
   name: string;
   fullName: string;
   iconUrl: string;
@@ -20,9 +20,9 @@ interface InventoryItemSkin {
 
 interface InventoryItemLotteryInfo {
   id: string;
-  userTicketCount: number;
-  totalTickets: number;
-  winChance: number;
+  ticketsBought: number;
+  ticketCount: number;
+  winRate: number;
   roomStatus: 'available' | 'overdue';
 }
 
@@ -31,7 +31,7 @@ interface InventoryItemResponse {
   status: 'available' | 'got' | 'sold';
   source: 'lottery' | 'daily_free';
   wonAt: string;
-  skin: InventoryItemSkin;
+  prize: InventoryItemPrize;
   lottery: InventoryItemLotteryInfo | null;
 }
 
@@ -80,17 +80,17 @@ function InventoryCard({ item }: { item: InventoryItemResponse }) {
     }}>
       {/* Skin image */}
       <div style={{
-        background: item.skin.backgroundColor ? `#${item.skin.backgroundColor}` : '#111',
+        background: item.prize.backgroundColor ? `#${item.prize.backgroundColor}` : '#111',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         height: 110,
         flexShrink: 0,
       }}>
-        {item.skin.iconUrl && !imgError ? (
+        {item.prize.iconUrl && !imgError ? (
           <img
-            src={item.skin.iconUrl}
-            alt={item.skin.fullName}
+            src={item.prize.iconUrl}
+            alt={item.prize.fullName}
             style={{ maxHeight: 90, maxWidth: '100%', objectFit: 'contain' }}
             onError={() => setImgError(true)}
           />
@@ -123,24 +123,24 @@ function InventoryCard({ item }: { item: InventoryItemResponse }) {
 
         {/* Skin name */}
         <div style={{ fontWeight: 600, fontSize: '0.85rem', lineHeight: 1.3, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
-          {item.skin.fullName || item.skin.name || '—'}
+          {item.prize.fullName || item.prize.name || '—'}
         </div>
 
         {/* Quality + price */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.75rem' }}>
-          <span style={{ color: qualityColor(item.skin.quality), fontWeight: 500 }}>
-            {item.skin.quality || '—'}
+          <span style={{ color: qualityColor(item.prize.quality), fontWeight: 500 }}>
+            {item.prize.quality || '—'}
           </span>
           <span style={{ color: '#4ade80', fontWeight: 700 }}>
-            ${item.skin.price.toFixed(2)}
+            ${item.prize.price.toFixed(2)}
           </span>
         </div>
 
         {/* Float + phase */}
-        {(item.skin.float !== null || item.skin.phase) && (
+        {(item.prize.float !== null || item.prize.phase) && (
           <div style={{ fontSize: '0.7rem', color: '#555', display: 'flex', gap: 8 }}>
-            {item.skin.float !== null && <span>float: {item.skin.float.toFixed(4)}</span>}
-            {item.skin.phase && <span>phase: {item.skin.phase}</span>}
+            {item.prize.float !== null && <span>float: {item.prize.float.toFixed(4)}</span>}
+            {item.prize.phase && <span>phase: {item.prize.phase}</span>}
           </div>
         )}
 
@@ -157,8 +157,8 @@ function InventoryCard({ item }: { item: InventoryItemResponse }) {
               </span>
             </div>
             <div style={{ display: 'flex', gap: 10 }}>
-              <span>🎫 {item.lottery.userTicketCount}/{item.lottery.totalTickets}</span>
-              <span>🏆 {item.lottery.winChance.toFixed(1)}%</span>
+              <span>🎫 {item.lottery.ticketsBought}/{item.lottery.ticketCount}</span>
+              <span>🏆 {item.lottery.winRate.toFixed(1)}%</span>
             </div>
           </div>
         )}

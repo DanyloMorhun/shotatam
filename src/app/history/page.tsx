@@ -21,8 +21,8 @@ interface PrivateEntry {
   lotteryId: string;
   tier: string;
   isWinner: boolean;
-  userTicketCount: number;
-  winChance: number;
+  ticketsBought: number;
+  winRate: number;
   prize: HistoryPrize;
   endsAt: string;
 }
@@ -30,8 +30,8 @@ interface PrivateEntry {
 interface PublicEntry {
   lotteryId: string;
   tier: string;
-  userTicketCount: number;
-  winChance: number;
+  ticketsBought: number;
+  winRate: number;
   prize: HistoryPrize;
   endsAt: string;
 }
@@ -45,12 +45,13 @@ interface PaginatedResult<T> {
 }
 
 interface MostExpensiveWin {
-  skinFullName: string;
-  skinIconUrl: string;
-  skinQuality: string;
-  skinPrice: number;
+  fullName: string;
+  iconUrl: string;
+  quality: string;
+  price: number;
+  backgroundColor: string;
   ticketsBought: number;
-  winChance: number;
+  winRate: number;
 }
 
 interface ActivityResponse {
@@ -104,8 +105,8 @@ function HistoryCard({ entry }: { entry: PrivateEntry }) {
       </div>
 
       <div style={{ display: 'flex', gap: '0.75rem', fontSize: '0.75rem', color: '#aaa', marginBottom: 4 }}>
-        <span>🎫 {entry.userTicketCount} tickets</span>
-        <span>🏆 {entry.winChance.toFixed(2)}% chance</span>
+        <span>🎫 {entry.ticketsBought} tickets</span>
+        <span>🏆 {entry.winRate.toFixed(2)}% chance</span>
       </div>
 
       <div style={{ fontSize: '0.7rem', color: '#555' }}>
@@ -148,8 +149,8 @@ function WinCard({ entry }: { entry: PublicEntry }) {
       </div>
 
       <div style={{ display: 'flex', gap: '0.75rem', fontSize: '0.75rem', color: '#aaa', marginBottom: 4 }}>
-        <span>🎫 {entry.userTicketCount} tickets</span>
-        <span>🏆 {entry.winChance.toFixed(2)}% chance</span>
+        <span>🎫 {entry.ticketsBought} tickets</span>
+        <span>🏆 {entry.winRate.toFixed(2)}% chance</span>
       </div>
 
       <div style={{ fontSize: '0.7rem', color: '#555' }}>
@@ -295,27 +296,27 @@ export default function HistoryPage() {
               padding: '0.75rem 1rem', maxWidth: 520,
             }}>
               <img
-                src={w.skinIconUrl}
-                alt={w.skinFullName}
+                src={w.iconUrl}
+                alt={w.fullName}
                 style={{ width: 80, height: 60, objectFit: 'contain', flexShrink: 0 }}
                 onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
               />
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: '0.65rem', color: '#888', marginBottom: 2, textTransform: 'uppercase' }}>
-                  {w.skinQuality}
+                  {w.quality}
                 </div>
                 <div style={{ fontWeight: 700, fontSize: '0.95rem', color: '#e74c3c', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  {w.skinFullName}
+                  {w.fullName}
                 </div>
                 <div style={{ fontSize: '0.85rem', color: '#e5e7eb', margin: '2px 0 6px' }}>
-                  ${w.skinPrice.toFixed(2)}
+                  ${(w.price ?? 0).toFixed(2)}
                 </div>
                 <div style={{ display: 'flex', gap: 8 }}>
                   <span style={{ fontSize: '0.72rem', background: '#1f2d1f', padding: '2px 8px', borderRadius: 20 }}>
                     🎫 {w.ticketsBought}
                   </span>
                   <span style={{ fontSize: '0.72rem', background: '#1f2d1f', padding: '2px 8px', borderRadius: 20 }}>
-                    🏆 {w.winChance.toFixed(2)}%
+                    🏆 {w.winRate.toFixed(2)}%
                   </span>
                 </div>
               </div>
