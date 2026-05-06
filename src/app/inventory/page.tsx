@@ -20,7 +20,7 @@ interface InventoryItemSkin {
 
 interface InventoryItemLotteryInfo {
   id: string;
-  ticketsBought: number;
+  userTicketCount: number;
   totalTickets: number;
   winChance: number;
   roomStatus: 'available' | 'overdue';
@@ -28,7 +28,7 @@ interface InventoryItemLotteryInfo {
 
 interface InventoryItemResponse {
   id: string;
-  status: 'got' | 'sold';
+  status: 'available' | 'got' | 'sold';
   source: 'lottery' | 'daily_free';
   wonAt: string;
   skin: InventoryItemSkin;
@@ -107,8 +107,8 @@ function InventoryCard({ item }: { item: InventoryItemResponse }) {
           <span style={{
             fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1,
             padding: '1px 7px', borderRadius: 4,
-            background: item.status === 'got' ? '#14532d' : '#1f1f1f',
-            color: item.status === 'got' ? '#4ade80' : '#888',
+            background: item.status === 'available' ? '#14532d' : item.status === 'got' ? '#1e3a5f' : '#1f1f1f',
+            color: item.status === 'available' ? '#4ade80' : item.status === 'got' ? '#60a5fa' : '#888',
           }}>
             {item.status}
           </span>
@@ -157,8 +157,8 @@ function InventoryCard({ item }: { item: InventoryItemResponse }) {
               </span>
             </div>
             <div style={{ display: 'flex', gap: 10 }}>
-              <span>🎫 {item.lottery.ticketsBought}/{item.lottery.totalTickets}</span>
-              <span>🏆 {(item.lottery.winChance * 100).toFixed(1)}%</span>
+              <span>🎫 {item.lottery.userTicketCount}/{item.lottery.totalTickets}</span>
+              <span>🏆 {item.lottery.winChance.toFixed(1)}%</span>
             </div>
           </div>
         )}

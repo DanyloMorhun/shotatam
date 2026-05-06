@@ -111,7 +111,7 @@ function BuyPanel({ lottery, token, onDone }: { lottery: Lottery; token: string 
           </div>
           <div style={{ fontSize: '0.8rem', color: '#888', marginTop: 2 }}>
             {lottery.prize?.type && <span style={{ color: '#a78bfa', marginRight: 6 }}>{lottery.prize.type}</span>}
-            {lottery.prize?.quality} · ${(lottery.prize?.price ?? 0) / 100} prize · ${lottery.ticketPrice / 100} / ticket
+            {lottery.prize?.quality} · ${(lottery.prize?.price ?? 0).toFixed(2)} prize · ${lottery.ticketPrice.toFixed(2)} / ticket
           </div>
         </div>
         <button onClick={onDone} style={{ ...btnStyle(), padding: '2px 8px', fontSize: '0.75rem' }}>✕ close</button>
@@ -152,7 +152,7 @@ function BuyPanel({ lottery, token, onDone }: { lottery: Lottery; token: string 
             color: '#fff', border: 'none', borderRadius: 6, fontWeight: 700, fontSize: '0.9rem',
           }}
         >
-          {buying ? 'Buying…' : `Buy ${qty} ticket${qty !== 1 ? 's' : ''} — $${(totalCost / 100).toFixed(2)}`}
+          {buying ? 'Buying…' : `Buy ${qty} ticket${qty !== 1 ? 's' : ''} — $${totalCost.toFixed(2)}`}
         </button>
       </div>
 
@@ -197,7 +197,8 @@ function LotteryCard({ lottery, selected, onSelect }: { lottery: Lottery; select
         {lottery.prize?.skinName || lottery.prize?.fullName || 'Unknown'}
       </div>
       <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: 4 }}>
-        ${(lottery.prize?.price ?? 0) / 100} · ${lottery.ticketPrice / 100}/ticket
+        <span style={{ color: '#4ade80', fontWeight: 600 }}>${(lottery.prize?.price ?? 0).toFixed(2)}</span>
+        {' · '}${lottery.ticketPrice.toFixed(2)}/ticket
       </div>
       {lottery.prize?.type && (
         <div style={{ fontSize: '0.7rem', color: '#a78bfa', marginBottom: 6 }}>
