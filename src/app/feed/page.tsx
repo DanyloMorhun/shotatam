@@ -13,10 +13,13 @@ interface FeedPrize {
 }
 
 interface FeedWinner {
-  steamId: string;
+  id: string;
   username: string;
   avatarUrl: string | null;
-  ticketsCount: number;
+  profileUrl: string;
+  winningTicketNumber: number;
+  ticketsBought: number;
+  winRate: number;
   isServer: boolean;
 }
 
@@ -24,7 +27,7 @@ interface FeedEntry {
   lotteryId: string;
   tier: 'low' | 'mid' | 'high';
   prize: FeedPrize;
-  winner: FeedWinner | null;
+  winnerInfo: FeedWinner | null;
 }
 
 interface WsEvent {
@@ -52,11 +55,17 @@ function EntryCard({ entry }: { entry: FeedEntry }) {
         <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>{entry.prize.name}</span>
         <span style={{ fontSize: '0.72rem', color: '#888', marginLeft: 'auto' }}>{entry.prize.quality}</span>
       </div>
-      {entry.winner?.isServer ? (
+      {entry.winnerInfo?.isServer ? (
         <div style={{ fontSize: '0.72rem', color: '#d97706' }}>server win</div>
-      ) : entry.winner ? (
-        <div style={{ fontSize: '0.72rem', color: '#aaa' }}>
-          winner: <strong>{entry.winner.username}</strong> · {entry.winner.ticketsCount} ticket{entry.winner.ticketsCount !== 1 ? 's' : ''} · steam:{entry.winner.steamId}
+      ) : entry.winnerInfo ? (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.72rem', color: '#aaa' }}>
+          {entry.winnerInfo.avatarUrl && (
+            <img src={entry.winnerInfo.avatarUrl} alt="" style={{ width: 18, height: 18, borderRadius: '50%', flexShrink: 0 }} />
+          )}
+          <strong style={{ color: '#e5e7eb' }}>{entry.winnerInfo.username}</strong>
+          <span>· ticket #{entry.winnerInfo.winningTicketNumber}</span>
+          <span>· {entry.winnerInfo.ticketsBought} bought</span>
+          <span>· {entry.winnerInfo.winRate.toFixed(1)}% chance</span>
         </div>
       ) : (
         <div style={{ fontSize: '0.72rem', color: '#888' }}>no winner</div>
