@@ -44,6 +44,19 @@ interface PaginatedResult<T> {
   totalPages: number;
 }
 
+interface MostExpensiveWin {
+  skinFullName: string;
+  skinIconUrl: string;
+  skinQuality: string;
+  skinPrice: number;
+  ticketsBought: number;
+  winChance: number;
+}
+
+interface ActivityResponse {
+  mostExpensiveWin: MostExpensiveWin | null;
+}
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 const TIER_COLOR: Record<string, string> = {
@@ -162,6 +175,9 @@ export default function HistoryPage() {
   const [publicLoading, setPublicLoading] = useState(false);
   const [publicError, setPublicError] = useState<string | null>(null);
 
+  const [activity, setActivity] = useState<ActivityResponse | null>(null);
+  const [activityLoading, setActivityLoading] = useState(false);
+
   useEffect(() => {
     void silentRefresh();
   }, []);
@@ -184,6 +200,7 @@ export default function HistoryPage() {
     if (!token || !steamId) return;
     void fetchPrivateHistory(token);
     void fetchPublicHistory(steamId);
+    void fetchActivity(steamId);
   }, [token, steamId]);
 
   async function fetchPrivateHistory(accessToken: string) {
@@ -200,6 +217,18 @@ export default function HistoryPage() {
       setPrivateError(String(e));
     } finally {
       setPrivateLoading(false);
+    }
+  }
+
+  async function fetchActivity(id: string) {
+    setActivityLoading(true);
+    try {
+      const res = await fetch(`${API_URL}/api/users/${id}/activity`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const { result } = await res.json() as { result: ActivityResponse };
+      setActivity(result);
+    } finally {
+      setActivityLoading(false);
     }
   }
 
@@ -249,6 +278,51 @@ export default function HistoryPage() {
         <h1 style={{ fontFamily: 'sans-serif', margin: 0, fontSize: '1.4rem' }}>Lottery History</h1>
         <span style={{ fontSize: '0.82rem', color: '#4ade80' }}>● {username}</span>
       </div>
+
+      {/* Activity banner */}
+      <section style={{ marginBottom: '2rem' }}>
+        <h2 style={{ fontFamily: 'sans-serif', fontSize: '1.1rem', margin: '0 0 0.75rem' }}>Most expensive win</h2>
+        {activityLoading && <div style={{ color: '#555', fontSize: '0.82rem' }}>Loading…</div>}
+        {!activityLoading && activity && !activity.mostExpensiveWin && (
+          <div style={{ color: '#555', fontSize: '0.82rem' }}>No wins yet</div>
+        )}
+        {!activityLoading && activity?.mostExpensiveWin && (() => {
+          const w = activity.mostExpensiveWin;
+          return (
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: '1rem',
+              background: '#0d1a0d', border: '1px solid #166534', borderRadius: 10,
+              padding: '0.75rem 1rem', maxWidth: 520,
+            }}>
+              <img
+                src={w.skinIconUrl}
+                alt={w.skinFullName}
+                style={{ width: 80, height: 60, objectFit: 'contain', flexShrink: 0 }}
+                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+              />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: '0.65rem', color: '#888', marginBottom: 2, textTransform: 'uppercase' }}>
+                  {w.skinQuality}
+                </div>
+                <div style={{ fontWeight: 700, fontSize: '0.95rem', color: '#e74c3c', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {w.skinFullName}
+                </div>
+                <div style={{ fontSize: '0.85rem', color: '#e5e7eb', margin: '2px 0 6px' }}>
+                  ${w.skinPrice.toFixed(2)}
+                </div>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <span style={{ fontSize: '0.72rem', background: '#1f2d1f', padding: '2px 8px', borderRadius: 20 }}>
+                    🎫 {w.ticketsBought}
+                  </span>
+                  <span style={{ fontSize: '0.72rem', background: '#1f2d1f', padding: '2px 8px', borderRadius: 20 }}>
+                    🏆 {w.winChance.toFixed(2)}%
+                  </span>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+      </section>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
 
