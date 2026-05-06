@@ -69,6 +69,7 @@ const LINKS = [
 
 const AUTH_LINKS = [
   { href: '/history', label: 'History' },
+  { href: '/inventory', label: 'Inventory' },
 ];
 
 export default function Navbar() {

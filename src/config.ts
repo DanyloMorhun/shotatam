@@ -1,1 +1,1 @@
-export const API_URL = 'https://dc6p534iu6aoc.cloudfront.net';
+export const API_URL = 'http://localhost:3001';
