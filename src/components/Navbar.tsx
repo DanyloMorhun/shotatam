@@ -71,6 +71,7 @@ const AUTH_LINKS = [
   { href: '/history', label: 'History' },
   { href: '/inventory', label: 'Inventory' },
   { href: '/daily-free', label: 'Daily Free' },
+  { href: '/promo', label: 'Promo' },
 ];
 
 export default function Navbar() {
