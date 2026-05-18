@@ -45,13 +45,19 @@ interface PaginatedResult<T> {
 }
 
 interface MostExpensiveWin {
-  fullName: string;
-  iconUrl: string;
-  quality: string;
-  price: number;
-  backgroundColor: string;
-  ticketsBought: number;
-  winRate: number;
+  prize: {
+    fullName: string;
+    name: string;
+    skinName: string;
+    iconUrl: string;
+    quality: string;
+    price: number;
+    backgroundColor: string;
+  };
+  winnerInfo: {
+    ticketsBought: number;
+    winRate: number;
+  };
 }
 
 interface ActivityResponse {
@@ -288,7 +294,7 @@ export default function HistoryPage() {
           <div style={{ color: '#555', fontSize: '0.82rem' }}>No wins yet</div>
         )}
         {!activityLoading && activity?.mostExpensiveWin && (() => {
-          const w = activity.mostExpensiveWin;
+          const { prize, winnerInfo } = activity.mostExpensiveWin;
           return (
             <div style={{
               display: 'flex', alignItems: 'center', gap: '1rem',
@@ -296,27 +302,27 @@ export default function HistoryPage() {
               padding: '0.75rem 1rem', maxWidth: 520,
             }}>
               <img
-                src={w.iconUrl}
-                alt={w.fullName}
+                src={prize.iconUrl}
+                alt={prize.fullName}
                 style={{ width: 80, height: 60, objectFit: 'contain', flexShrink: 0 }}
                 onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
               />
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: '0.65rem', color: '#888', marginBottom: 2, textTransform: 'uppercase' }}>
-                  {w.quality}
+                  {prize.quality}
                 </div>
                 <div style={{ fontWeight: 700, fontSize: '0.95rem', color: '#e74c3c', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  {w.fullName}
+                  {prize.name} | {prize.skinName}
                 </div>
                 <div style={{ fontSize: '0.85rem', color: '#e5e7eb', margin: '2px 0 6px' }}>
-                  ${(w.price ?? 0).toFixed(2)}
+                  ${(prize.price ?? 0).toFixed(2)}
                 </div>
                 <div style={{ display: 'flex', gap: 8 }}>
                   <span style={{ fontSize: '0.72rem', background: '#1f2d1f', padding: '2px 8px', borderRadius: 20 }}>
-                    🎫 {w.ticketsBought}
+                    🎫 {winnerInfo.ticketsBought}
                   </span>
                   <span style={{ fontSize: '0.72rem', background: '#1f2d1f', padding: '2px 8px', borderRadius: 20 }}>
-                    🏆 {w.winRate.toFixed(2)}%
+                    🏆 {winnerInfo.winRate.toFixed(2)}%
                   </span>
                 </div>
               </div>
