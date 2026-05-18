@@ -12,6 +12,7 @@ interface ActivatePromoResponse {
   promoId: string;
   rewardType: PromoRewardType;
   activatedAt: string;
+  rewardDetails: { tier: string; quantity: number } | null;
 }
 
 interface AdminPromoResponse {
@@ -185,6 +186,17 @@ function ActivateSection() {
       {result && (
         <>
           <p style={{ color: '#4ade80', fontSize: '0.8rem', marginTop: 8 }}>✓ Activated</p>
+          {result.rewardDetails && (
+            <div style={{
+              background: '#0d2a1a', border: '1px solid #166534', borderRadius: 6,
+              padding: '8px 12px', marginTop: 8, fontSize: '0.8rem',
+            }}>
+              <span style={{ color: '#4ade80', fontWeight: 700 }}>Free tickets credited: </span>
+              <span style={{ color: '#a3e635', fontFamily: 'monospace' }}>
+                {result.rewardDetails.quantity}× {result.rewardDetails.tier}
+              </span>
+            </div>
+          )}
           <pre style={pre}>{JSON.stringify(result, null, 2)}</pre>
         </>
       )}
@@ -518,6 +530,112 @@ function AdminSection() {
   );
 }
 
+// ─── Section: Free Tickets ────────────────────────────────────────────────────
+
+type FreeTicketTier = 'low' | 'mid' | 'high';
+type FreeTicketBalancesMap = Partial<Record<FreeTicketTier, number>>;
+
+function FreeTicketsSection() {
+  const [balances, setBalances] = useState<FreeTicketBalancesMap | null>(null);
+  const [balanceErr, setBalanceErr] = useState('');
+  const [balanceLoading, setBalanceLoading] = useState(false);
+
+  const [qaTier, setQaTier] = useState<FreeTicketTier>('low');
+  const [qaAmount, setQaAmount] = useState('3');
+  const [qaResult, setQaResult] = useState<{ balance: number } | null>(null);
+  const [qaErr, setQaErr] = useState('');
+
+  async function fetchBalance() {
+    setBalanceErr(''); setBalanceLoading(true);
+    try {
+      const res = await fetch(`${API_URL}/api/free-tickets/balance`, { headers: authHeaders() });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json?.message ?? res.statusText);
+      const body = json.result ?? json;
+      setBalances(body.balances ?? body);
+    } catch (e: unknown) {
+      setBalanceErr(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBalanceLoading(false);
+    }
+  }
+
+  async function addTickets() {
+    setQaErr(''); setQaResult(null);
+    try {
+      const res = await fetch(`${API_URL}/api/free-tickets/add`, {
+        method: 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify({ tier: qaTier, amount: Number(qaAmount) }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(JSON.stringify(json?.message ?? json));
+      setQaResult(json.result ?? json);
+    } catch (e: unknown) {
+      setQaErr(e instanceof Error ? e.message : String(e));
+    }
+  }
+
+  const TIERS: FreeTicketTier[] = ['low', 'mid', 'high'];
+
+  return (
+    <div style={card}>
+      <h3 style={{ margin: '0 0 1rem', color: '#fff', fontSize: '0.9rem' }}>Free Ticket Balances</h3>
+
+      {/* Balance check */}
+      <div style={{ marginBottom: 16 }}>
+        <button style={btn('#0369a1')} disabled={balanceLoading} onClick={fetchBalance}>
+          {balanceLoading ? '…' : 'GET my balance'}
+        </button>
+        {balanceErr && <p style={errorStyle}>{balanceErr}</p>}
+        {balances && (
+          <div style={{ display: 'flex', gap: 10, marginTop: 10 }}>
+            {TIERS.map(t => (
+              <div key={t} style={{
+                flex: 1, textAlign: 'center', background: '#0d0d0d',
+                borderRadius: 6, padding: '8px 0', border: '1px solid #1f1f1f',
+              }}>
+                <div style={{ color: '#555', fontSize: '0.68rem', textTransform: 'uppercase', letterSpacing: 1 }}>{t}</div>
+                <div style={{ color: '#a3e635', fontSize: '1.4rem', fontWeight: 700, fontFamily: 'monospace' }}>
+                  {balances[t] ?? 0}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* QA: add directly */}
+      <details>
+        <summary style={{ color: '#b45309', fontSize: '0.82rem', cursor: 'pointer', marginBottom: 10 }}>
+          [QA] Add free tickets directly (no auth)
+        </summary>
+        <div style={{ paddingTop: 10 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
+            <div>
+              <label style={label}>Tier</label>
+              <select style={{ ...input, cursor: 'pointer' }} value={qaTier} onChange={e => setQaTier(e.target.value as FreeTicketTier)}>
+                {TIERS.map(t => <option key={t} value={t}>{t}</option>)}
+              </select>
+            </div>
+            <div>
+              <label style={label}>Amount</label>
+              <input style={input} type="number" value={qaAmount} min="1" onChange={e => setQaAmount(e.target.value)} />
+            </div>
+          </div>
+          <button style={btn('#b45309')} onClick={addTickets}>Add tickets</button>
+          {qaErr && <p style={errorStyle}>{qaErr}</p>}
+          {qaResult && (
+            <p style={{ color: '#4ade80', fontSize: '0.8rem', marginTop: 8 }}>
+              ✓ New balance: <strong>{qaResult.balance}</strong>
+            </p>
+          )}
+        </div>
+      </details>
+    </div>
+  );
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function PromoPage() {
@@ -540,6 +658,7 @@ export default function PromoPage() {
         Promo Testing
       </h2>
       <ActivateSection />
+      <FreeTicketsSection />
       <AdminSection />
     </main>
   );
