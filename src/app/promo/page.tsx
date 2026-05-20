@@ -63,6 +63,10 @@ function adminHeaders() {
   return { 'Content-Type': 'application/json', 'x-admin-secret': ADMIN_SECRET };
 }
 
+function adminHeadersNoBody() {
+  return { 'x-admin-secret': ADMIN_SECRET };
+}
+
 const REWARD_CONFIG_DEFAULTS: Record<PromoRewardType, string> = {
   free_tickets: JSON.stringify({ tier: 'low', quantity: 3 }, null, 2),
   balance_topup_bonus: JSON.stringify({ bonusType: 'percentage', bonusValue: 20, minTopUpAmountCents: 1000 }, null, 2),
@@ -236,7 +240,7 @@ function AdminSection() {
   async function listPromos() {
     setErr(''); setLoading(true);
     try {
-      const res = await fetch(`${API_URL}/api/admin/promo?limit=50`, { headers: adminHeaders() });
+      const res = await fetch(`${API_URL}/api/admin/promo?limit=50`, { headers: adminHeadersNoBody() });
       const json = await res.json();
       if (!res.ok) throw new Error(json?.message ?? res.statusText);
       const body: AdminPromoListResponse = json.result ?? json;
@@ -254,7 +258,7 @@ function AdminSection() {
     try {
       const res = await fetch(`${API_URL}/api/admin/promo/${id}/deactivate`, {
         method: 'PUT',
-        headers: adminHeaders(),
+        headers: adminHeadersNoBody(),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json?.message ?? res.statusText);
@@ -267,7 +271,7 @@ function AdminSection() {
   async function getActivations(id: string) {
     setErr('');
     try {
-      const res = await fetch(`${API_URL}/api/admin/promo/${id}/activations`, { headers: adminHeaders() });
+      const res = await fetch(`${API_URL}/api/admin/promo/${id}/activations`, { headers: adminHeadersNoBody() });
       const json = await res.json();
       if (!res.ok) throw new Error(json?.message ?? res.statusText);
       const body: AdminPromoActivationsResponse = json.result ?? json;
