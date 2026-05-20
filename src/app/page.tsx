@@ -146,9 +146,17 @@ function ProfileSection({ token, user, onLogout }: { token: string; user: UserBa
               <div><strong>profileUrl:</strong> <a href={details.profileUrl} target="_blank" rel="noreferrer" style={{ color: '#2563eb' }}>{details.profileUrl}</a></div>
               <div><strong>createdAt:</strong> {new Date(details.createdAt).toLocaleString()}</div>
               <div><strong>lastLoginAt:</strong> {details.lastLoginAt ? new Date(details.lastLoginAt).toLocaleString() : <em style={{ color: '#aaa' }}>—</em>}</div>
-              <div style={{ marginTop: 4 }}>
+              <div style={{ marginTop: 4, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                 <strong>invitationLink:</strong>{' '}
-                <span style={{ wordBreak: 'break-all' }}>{details.invitationLink}</span>
+                <a href={details.invitationLink} target="_blank" rel="noreferrer" style={{ color: '#2563eb', wordBreak: 'break-all' }}>
+                  {details.invitationLink}
+                </a>
+                <button
+                  onClick={() => void navigator.clipboard.writeText(details.invitationLink)}
+                  style={{ padding: '1px 8px', cursor: 'pointer', fontFamily: 'monospace', fontSize: '0.72rem', background: '#1a1a1a', border: '1px solid #333', borderRadius: 4, color: '#aaa', flexShrink: 0 }}
+                >
+                  copy
+                </button>
               </div>
             </div>
 

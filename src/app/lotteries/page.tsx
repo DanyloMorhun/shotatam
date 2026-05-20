@@ -112,7 +112,7 @@ function BuyPanel({ lottery, token, onDone }: { lottery: Lottery; token: string 
             {lottery.tier}
           </span>
           <div style={{ fontWeight: 700, fontSize: '1.05rem', marginTop: 2 }}>
-            {lottery.prize?.skinName || lottery.prize?.fullName || 'Unknown prize'}
+            {lottery.prize?.fullName || lottery.prize?.skinName || 'Unknown prize'}
           </div>
           <div style={{ fontSize: '0.8rem', color: '#888', marginTop: 2 }}>
             {lottery.prize?.type && <span style={{ color: '#a78bfa', marginRight: 6 }}>{lottery.prize.type}</span>}
@@ -199,7 +199,7 @@ function LotteryCard({ lottery, selected, onSelect }: { lottery: Lottery; select
       </div>
 
       <div style={{ fontWeight: 600, fontSize: '0.9rem', marginBottom: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-        {lottery.prize?.skinName || lottery.prize?.fullName || 'Unknown'}
+        {lottery.prize?.fullName || lottery.prize?.skinName || 'Unknown'}
       </div>
       <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: 4 }}>
         <span style={{ color: '#4ade80', fontWeight: 600 }}>${(lottery.prize?.price ?? 0).toFixed(2)}</span>
@@ -398,13 +398,25 @@ export default function LotteriesPage() {
         ))}
       </div>
 
-      {/* buy panel */}
+      {/* buy modal */}
       {selected && (
-        <BuyPanel
-          lottery={selected}
-          token={token}
-          onDone={() => { setSelected(null); void fetchLotteries(); }}
-        />
+        <div
+          style={{
+            position: 'fixed', inset: 0, zIndex: 50,
+            background: 'rgba(0,0,0,0.75)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            padding: '1rem',
+          }}
+          onClick={e => { if (e.target === e.currentTarget) { setSelected(null); } }}
+        >
+          <div style={{ width: '100%', maxWidth: 540, maxHeight: '90vh', overflowY: 'auto' }}>
+            <BuyPanel
+              lottery={selected}
+              token={token}
+              onDone={() => { setSelected(null); void fetchLotteries(); }}
+            />
+          </div>
+        </div>
       )}
     </main>
   );

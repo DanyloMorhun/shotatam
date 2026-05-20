@@ -93,7 +93,7 @@ export default function PrizePoolPage() {
                 <th style={th}>Tier</th>
                 <th style={th}>Skin</th>
                 <th style={{ ...th, textAlign: 'right' }}>Skinvend</th>
-                <th style={{ ...th, textAlign: 'center', width: 32 }}></th>
+                <th style={{ ...th, textAlign: 'center', width: 32 }}>cmp</th>
                 <th style={{ ...th, textAlign: 'right' }}>Client</th>
                 <th style={th}>Lottery ID</th>
               </tr>
@@ -113,7 +113,7 @@ export default function PrizePoolPage() {
                     <td style={{ ...td, fontWeight: 700, color: TIER_COLOR[l.tier] ?? '#aaa', textTransform: 'uppercase', fontSize: '0.75rem', letterSpacing: 1 }}>
                       {l.tier}
                     </td>
-                    <td style={td}>{l.prize!.skinName || l.prize!.fullName}</td>
+                    <td style={td}>{l.prize!.fullName || l.prize!.skinName}</td>
                     <td style={{ ...td, textAlign: 'right', fontFamily: 'monospace', color: isGood ? '#4ade80' : '#f87171', fontWeight: 600 }}>
                       ${skinvend.toFixed(2)}
                     </td>

@@ -8,6 +8,7 @@ const WS_BASE = new URL(API_URL).origin;
 
 interface FeedPrize {
   name: string;
+  fullName: string;
   iconUrl: string;
   quality: string;
 }
@@ -52,7 +53,7 @@ function EntryCard({ entry }: { entry: FeedEntry }) {
         <span style={{ fontSize: '0.7rem', fontWeight: 700, color: TIER_COLOR[entry.tier] ?? '#333', textTransform: 'uppercase', letterSpacing: 1 }}>
           {entry.tier}
         </span>
-        <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>{entry.prize.name}</span>
+        <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>{entry.prize.fullName || entry.prize.name}</span>
         <span style={{ fontSize: '0.72rem', color: '#888', marginLeft: 'auto' }}>{entry.prize.quality}</span>
       </div>
       {entry.winnerInfo?.isServer ? (

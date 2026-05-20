@@ -103,7 +103,7 @@ function HistoryCard({ entry }: { entry: PrivateEntry }) {
       </div>
 
       <div style={{ fontWeight: 600, fontSize: '0.9rem', marginBottom: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-        {entry.prize.skinName || entry.prize.fullName}
+        {entry.prize.fullName || entry.prize.skinName}
       </div>
       <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: 6 }}>
         <span style={{ color: '#a78bfa', marginRight: 6 }}>{entry.prize.quality}</span>
@@ -147,7 +147,7 @@ function WinCard({ entry }: { entry: PublicEntry }) {
       </div>
 
       <div style={{ fontWeight: 600, fontSize: '0.9rem', marginBottom: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-        {entry.prize.skinName || entry.prize.fullName}
+        {entry.prize.fullName || entry.prize.skinName}
       </div>
       <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: 6 }}>
         <span style={{ color: '#a78bfa', marginRight: 6 }}>{entry.prize.quality}</span>
@@ -312,7 +312,7 @@ export default function HistoryPage() {
                   {prize.quality}
                 </div>
                 <div style={{ fontWeight: 700, fontSize: '0.95rem', color: '#e74c3c', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  {prize.name} | {prize.skinName}
+                  {prize.fullName || `${prize.name} | ${prize.skinName}`}
                 </div>
                 <div style={{ fontSize: '0.85rem', color: '#e5e7eb', margin: '2px 0 6px' }}>
                   ${(prize.price ?? 0).toFixed(2)}

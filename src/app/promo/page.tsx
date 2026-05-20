@@ -150,7 +150,7 @@ function Field({ label: l, value, onChange, placeholder, type = 'text' }: {
 
 // ─── Section: Activate ───────────────────────────────────────────────────────
 
-function ActivateSection() {
+function ActivateSection({ onFreeTickets }: { onFreeTickets: () => void }) {
   const [code, setCode] = useState('');
   const [result, setResult] = useState<ActivatePromoResponse | null>(null);
   const [err, setErr] = useState('');
@@ -166,7 +166,9 @@ function ActivateSection() {
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json?.message ?? res.statusText);
-      setResult(json.result ?? json);
+      const activated: ActivatePromoResponse = json.result ?? json;
+      setResult(activated);
+      if (activated.rewardType === 'free_tickets') onFreeTickets();
     } catch (e: unknown) {
       setErr(e instanceof Error ? e.message : String(e));
     } finally {
@@ -244,7 +246,7 @@ function AdminSection() {
       const json = await res.json();
       if (!res.ok) throw new Error(json?.message ?? res.statusText);
       const body: AdminPromoListResponse = json.result ?? json;
-      setPromos(body.data);
+      setPromos([...body.data].reverse());
       setTotal(body.total);
     } catch (e: unknown) {
       setErr(e instanceof Error ? e.message : String(e));
@@ -257,6 +259,21 @@ function AdminSection() {
     setErr('');
     try {
       const res = await fetch(`${API_URL}/api/admin/promo/${id}/deactivate`, {
+        method: 'PUT',
+        headers: adminHeadersNoBody(),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json?.message ?? res.statusText);
+      await listPromos();
+    } catch (e: unknown) {
+      setErr(e instanceof Error ? e.message : String(e));
+    }
+  }
+
+  async function reactivate(id: string) {
+    setErr('');
+    try {
+      const res = await fetch(`${API_URL}/api/admin/promo/${id}/reactivate`, {
         method: 'PUT',
         headers: adminHeadersNoBody(),
       });
@@ -340,7 +357,7 @@ function AdminSection() {
         rewardType: updateRewardType,
         rewardConfig,
       };
-      if (updateLimit) body.activationLimit = Number(updateLimit);
+      body.activationLimit = updateLimit !== '' ? Number(updateLimit) : null;
       if (updateUntil) body.activeUntil = new Date(updateUntil).toISOString();
 
       const res = await fetch(`${API_URL}/api/admin/promo/${id}`, {
@@ -437,9 +454,10 @@ function AdminSection() {
                       {editingId === p.id ? 'cancel' : 'edit'}
                     </button>
                     <button style={btn('#b45309')} onClick={() => getActivations(p.id)}>activations</button>
-                    {p.status === 'active' && (
-                      <button style={btn('#7f1d1d')} onClick={() => deactivate(p.id)}>deactivate</button>
-                    )}
+                    {p.status === 'active'
+                      ? <button style={btn('#7f1d1d')} onClick={() => deactivate(p.id)}>deactivate</button>
+                      : <button style={btn('#059669')} onClick={() => reactivate(p.id)}>reactivate</button>
+                    }
                   </div>
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6 }}>
@@ -539,15 +557,19 @@ function AdminSection() {
 type FreeTicketTier = 'low' | 'mid' | 'high';
 type FreeTicketBalancesMap = Partial<Record<FreeTicketTier, number>>;
 
-function FreeTicketsSection() {
+function FreeTicketsSection({ autoToken, refreshKey }: { autoToken: string; refreshKey: number }) {
   const [balances, setBalances] = useState<FreeTicketBalancesMap | null>(null);
   const [balanceErr, setBalanceErr] = useState('');
   const [balanceLoading, setBalanceLoading] = useState(false);
 
   const [qaTier, setQaTier] = useState<FreeTicketTier>('low');
   const [qaAmount, setQaAmount] = useState('3');
-  const [qaResult, setQaResult] = useState<{ balance: number } | null>(null);
   const [qaErr, setQaErr] = useState('');
+
+  useEffect(() => {
+    if (autoToken) void fetchBalance();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoToken, refreshKey]);
 
   async function fetchBalance() {
     setBalanceErr(''); setBalanceLoading(true);
@@ -565,7 +587,7 @@ function FreeTicketsSection() {
   }
 
   async function addTickets() {
-    setQaErr(''); setQaResult(null);
+    setQaErr('');
     try {
       const res = await fetch(`${API_URL}/api/free-tickets/add`, {
         method: 'POST',
@@ -574,7 +596,7 @@ function FreeTicketsSection() {
       });
       const json = await res.json();
       if (!res.ok) throw new Error(JSON.stringify(json?.message ?? json));
-      setQaResult(json.result ?? json);
+      await fetchBalance();
     } catch (e: unknown) {
       setQaErr(e instanceof Error ? e.message : String(e));
     }
@@ -629,11 +651,6 @@ function FreeTicketsSection() {
           </div>
           <button style={btn('#b45309')} onClick={addTickets}>Add tickets</button>
           {qaErr && <p style={errorStyle}>{qaErr}</p>}
-          {qaResult && (
-            <p style={{ color: '#4ade80', fontSize: '0.8rem', marginTop: 8 }}>
-              ✓ New balance: <strong>{qaResult.balance}</strong>
-            </p>
-          )}
         </div>
       </details>
     </div>
@@ -643,14 +660,16 @@ function FreeTicketsSection() {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function PromoPage() {
+  const [accessToken, setAccessToken] = useState('');
+  const [ticketRefreshKey, setTicketRefreshKey] = useState(0);
+
   useEffect(() => {
     fetch(`${API_URL}/api/auth/refresh`, { method: 'POST', credentials: 'include' })
-      .then(res => {
-        if (res.ok) return res.json();
-      })
+      .then(res => { if (res.ok) return res.json(); })
       .then((json) => {
         if (json?.result?.accessToken) {
           localStorage.setItem('access_token', json.result.accessToken);
+          setAccessToken(json.result.accessToken);
         }
       })
       .catch(() => {});
@@ -661,8 +680,8 @@ export default function PromoPage() {
       <h2 style={{ color: '#fff', fontSize: '1rem', marginBottom: '1.5rem', letterSpacing: '0.02em' }}>
         Promo Testing
       </h2>
-      <ActivateSection />
-      <FreeTicketsSection />
+      <ActivateSection onFreeTickets={() => setTicketRefreshKey(k => k + 1)} />
+      <FreeTicketsSection autoToken={accessToken} refreshKey={ticketRefreshKey} />
       <AdminSection />
     </main>
   );

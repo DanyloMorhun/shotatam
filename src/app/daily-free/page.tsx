@@ -363,53 +363,55 @@ export default function DailyFreePage() {
       )}
 
       {/* QA Controls */}
-      <div style={{ background: '#0a0a14', border: '1px solid #1e1b4b', borderRadius: 8, padding: '0.75rem 1rem', marginBottom: '1rem' }}>
-        <div style={{ fontSize: '0.65rem', color: '#6366f1', textTransform: 'uppercase', letterSpacing: 1, marginBottom: '0.6rem', fontWeight: 700 }}>
+      <details style={{ marginBottom: '1rem', opacity: 0.6 }}>
+        <summary style={{ fontSize: '0.7rem', color: '#6366f1', textTransform: 'uppercase', letterSpacing: 1, fontWeight: 700, cursor: 'pointer', userSelect: 'none' }}>
           QA Controls (temporary)
-        </div>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-          <span style={{ fontSize: '0.75rem', color: '#555', marginRight: 4 }}>Set level:</span>
-          {[1, 2, 3].map(lvl => (
+        </summary>
+        <div style={{ background: '#0a0a14', border: '1px solid #1e1b4b', borderRadius: 8, padding: '0.75rem 1rem', marginTop: '0.5rem' }}>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+            <span style={{ fontSize: '0.75rem', color: '#555', marginRight: 4 }}>Set level:</span>
+            {[1, 2, 3].map(lvl => (
+              <button
+                key={lvl}
+                onClick={() => qaSetLevel(lvl)}
+                disabled={qaLoading}
+                style={btnStyle('#1e1b4b', '#a5b4fc')}
+              >
+                L{lvl}
+              </button>
+            ))}
+            <div style={{ width: 1, height: 20, background: '#1f1f1f', margin: '0 4px' }} />
             <button
-              key={lvl}
-              onClick={() => qaSetLevel(lvl)}
+              onClick={qaResetCooldown}
               disabled={qaLoading}
-              style={btnStyle('#1e1b4b', '#a5b4fc')}
+              style={btnStyle('#1a1000', '#facc15')}
             >
-              L{lvl}
+              Reset cooldown
             </button>
-          ))}
-          <div style={{ width: 1, height: 20, background: '#1f1f1f', margin: '0 4px' }} />
-          <button
-            onClick={qaResetCooldown}
-            disabled={qaLoading}
-            style={btnStyle('#1a1000', '#facc15')}
-          >
-            Reset cooldown
-          </button>
-          <div style={{ width: 1, height: 20, background: '#1f1f1f', margin: '0 4px' }} />
-          <span style={{ fontSize: '0.75rem', color: '#555', marginRight: 4 }}>Set spent ($):</span>
-          <input
-            type="number"
-            min="0"
-            step="0.01"
-            placeholder="e.g. 150.00"
-            value={spentInput}
-            onChange={e => setSpentInput(e.target.value)}
-            style={{
-              width: 100, padding: '4px 8px', borderRadius: 6, border: '1px solid #1f1f1f',
-              background: '#0a0a0a', color: '#e5e7eb', fontFamily: 'monospace', fontSize: '0.8rem',
-            }}
-          />
-          <button
-            onClick={() => qaSetSpent(spentInput)}
-            disabled={qaLoading || spentInput === ''}
-            style={btnStyle('#140a1e', '#c084fc')}
-          >
-            Apply
-          </button>
+            <div style={{ width: 1, height: 20, background: '#1f1f1f', margin: '0 4px' }} />
+            <span style={{ fontSize: '0.75rem', color: '#555', marginRight: 4 }}>Set spent ($):</span>
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              placeholder="e.g. 150.00"
+              value={spentInput}
+              onChange={e => setSpentInput(e.target.value)}
+              style={{
+                width: 100, padding: '4px 8px', borderRadius: 6, border: '1px solid #1f1f1f',
+                background: '#0a0a0a', color: '#e5e7eb', fontFamily: 'monospace', fontSize: '0.8rem',
+              }}
+            />
+            <button
+              onClick={() => qaSetSpent(spentInput)}
+              disabled={qaLoading || spentInput === ''}
+              style={btnStyle('#140a1e', '#c084fc')}
+            >
+              Apply
+            </button>
+          </div>
         </div>
-      </div>
+      </details>
 
       {/* Open button */}
       <button
