@@ -24,6 +24,7 @@ interface Lottery {
   quickBuySteps?: number[] | null;
   endsAt: string;
   prize: LotteryPrize | null;
+  ticketsBought?: number;
 }
 
 interface PaginatedResult {
@@ -69,9 +70,13 @@ function BuyPanel({ lottery, token, onDone }: { lottery: Lottery; token: string 
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ quantity: qty }),
       });
-      const body = await res.json() as { result?: { balance: number }; message?: string };
+      const body = await res.json() as { result?: { balance: number; ticketsBought: number; purchaseCost: number }; message?: string };
       if (res.ok && body.result) {
-        setResult({ ok: true, msg: `Bought ${qty} ticket${qty !== 1 ? 's' : ''}! New balance: $${(body.result.balance / 100).toFixed(2)}` });
+        const { balance, ticketsBought, purchaseCost } = body.result;
+        setResult({
+          ok: true,
+          msg: `Bought ${qty} ticket${qty !== 1 ? 's' : ''}! Cost: $${(purchaseCost / 100).toFixed(2)} · Your tickets in this room: ${ticketsBought} · Balance: $${(balance / 100).toFixed(2)}`,
+        });
         onDone();
       } else {
         setResult({ ok: false, msg: String(body.message ?? `HTTP ${res.status}`) });
@@ -213,6 +218,11 @@ function LotteryCard({ lottery, selected, onSelect }: { lottery: Lottery; select
       <div style={{ fontSize: '0.7rem', color: '#666', marginTop: 4 }}>
         {lottery.soldTickets}/{lottery.ticketCount} tickets
       </div>
+      {lottery.ticketsBought !== undefined && lottery.ticketsBought > 0 && (
+        <div style={{ fontSize: '0.7rem', color: '#4ade80', marginTop: 3, fontWeight: 600 }}>
+          ✓ You own {lottery.ticketsBought} ticket{lottery.ticketsBought !== 1 ? 's' : ''}
+        </div>
+      )}
     </div>
   );
 }
@@ -248,7 +258,9 @@ export default function LotteriesPage() {
 
   useEffect(() => {
     void fetchLotteries();
-  }, [categoryFilter]);
+    // re-fetch when token changes so ticketsBought is included for authenticated users
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [categoryFilter, token]);
 
   async function silentRefresh() {
     try {
@@ -289,7 +301,9 @@ export default function LotteriesPage() {
     try {
       const params = new URLSearchParams({ limit: '50' });
       if (categoryFilter !== 'all') params.set('category', categoryFilter);
-      const res = await fetch(`${API_URL}/api/lotteries?${params.toString()}`);
+      const headers: HeadersInit = {};
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+      const res = await fetch(`${API_URL}/api/lotteries?${params.toString()}`, { headers });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const { result } = await res.json() as { result: PaginatedResult };
       setLotteries(result.data);
