@@ -27,17 +27,33 @@ interface Lottery {
 }
 
 export default function PrizePoolPage() {
+  const [token, setToken] = useState<string | null>(null);
   const [lotteries, setLotteries] = useState<Lottery[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { void init(); }, []);
 
-  async function load() {
+  async function init() {
+    try {
+      const res = await fetch(`${API_URL}/api/auth/refresh`, { method: 'POST', credentials: 'include' });
+      if (res.ok) {
+        const { result } = await res.json() as { result: { accessToken: string } };
+        setToken(result.accessToken);
+        await load(result.accessToken);
+        return;
+      }
+    } catch { /* no refresh token, proceed unauthenticated */ }
+    await load(null);
+  }
+
+  async function load(accessToken: string | null = token) {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${API_URL}/api/lotteries?limit=50`);
+      const headers: Record<string, string> = {};
+      if (accessToken) headers['Authorization'] = `Bearer ${accessToken}`;
+      const res = await fetch(`${API_URL}/api/lotteries?limit=50`, { headers });
       if (!res.ok) throw new Error(`Lotteries API: HTTP ${res.status}`);
       const { result } = (await res.json()) as { result: { data: Lottery[] } };
       setLotteries(result.data.filter((l) => l.prize !== null));
@@ -59,7 +75,7 @@ export default function PrizePoolPage() {
       <h1>Prize Pool</h1>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
-        <button onClick={load} disabled={loading} style={{ padding: '6px 16px' }}>
+        <button onClick={() => void load()} disabled={loading} style={{ padding: '6px 16px' }}>
           {loading ? 'Loading…' : 'Refresh'}
         </button>
         {!loading && !error && (
@@ -99,13 +115,13 @@ export default function PrizePoolPage() {
                     </td>
                     <td style={td}>{l.prize!.skinName || l.prize!.fullName}</td>
                     <td style={{ ...td, textAlign: 'right', fontFamily: 'monospace', color: isGood ? '#4ade80' : '#f87171', fontWeight: 600 }}>
-                      ${(skinvend / 100).toFixed(2)}
+                      ${skinvend.toFixed(2)}
                     </td>
                     <td style={{ ...td, textAlign: 'center', fontWeight: 700, color: cmpColor, fontSize: '1rem' }}>
                       {cmp}
                     </td>
                     <td style={{ ...td, textAlign: 'right', fontFamily: 'monospace', fontWeight: 600 }}>
-                      ${(client / 100).toFixed(2)}
+                      ${client.toFixed(2)}
                     </td>
                     <td style={{ ...td, fontFamily: 'monospace', fontSize: '0.72rem', color: '#555' }}>{l.id}</td>
                   </tr>
