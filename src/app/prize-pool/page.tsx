@@ -11,52 +11,31 @@ const TIER_COLOR: Record<string, string> = {
   mystery: '#7c3aed',
 };
 
-interface LotteryPrize {
-  fullName: string;
-  skinName: string;
-  price: number;
-}
-
-interface Lottery {
-  id: string;
+interface PrizePoolItem {
+  lotteryId: string;
   tier: string;
-  ticketCount: number;
+  fullName: string;
+  price: number;
   ticketPrice: number;
-  soldTickets: number;
-  prize: LotteryPrize | null;
+  ticketCount: number;
+  margin: number;
 }
 
 export default function PrizePoolPage() {
-  const [token, setToken] = useState<string | null>(null);
-  const [lotteries, setLotteries] = useState<Lottery[]>([]);
+  const [items, setItems] = useState<PrizePoolItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => { void init(); }, []);
+  useEffect(() => { void load(); }, []);
 
-  async function init() {
-    try {
-      const res = await fetch(`${API_URL}/api/auth/refresh`, { method: 'POST', credentials: 'include' });
-      if (res.ok) {
-        const { result } = await res.json() as { result: { accessToken: string } };
-        setToken(result.accessToken);
-        await load(result.accessToken);
-        return;
-      }
-    } catch { /* no refresh token, proceed unauthenticated */ }
-    await load(null);
-  }
-
-  async function load(accessToken: string | null = token) {
+  async function load() {
     setLoading(true);
     setError(null);
     try {
-      const headers: Record<string, string> = {};
-      if (accessToken) headers['Authorization'] = `Bearer ${accessToken}`;
-      const res = await fetch(`${API_URL}/api/lotteries?limit=50`, { headers });
-      if (!res.ok) throw new Error(`Lotteries API: HTTP ${res.status}`);
-      const { result } = (await res.json()) as { result: { data: Lottery[] } };
-      setLotteries(result.data.filter((l) => l.prize !== null));
+      const res = await fetch(`${API_URL}/api/prize-pool`);
+      if (!res.ok) throw new Error(`Prize Pool API: HTTP ${res.status}`);
+      const { result } = (await res.json()) as { result: PrizePoolItem[] };
+      setItems(result);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -79,7 +58,7 @@ export default function PrizePoolPage() {
           {loading ? 'Loading…' : 'Refresh'}
         </button>
         {!loading && !error && (
-          <span style={{ fontSize: '0.85rem', color: '#888' }}>{lotteries.length} active prize{lotteries.length !== 1 ? 's' : ''}</span>
+          <span style={{ fontSize: '0.85rem', color: '#888' }}>{items.length} active prize{items.length !== 1 ? 's' : ''}</span>
         )}
       </div>
 
@@ -99,9 +78,9 @@ export default function PrizePoolPage() {
               </tr>
             </thead>
             <tbody>
-              {lotteries.map((l) => {
-                const skinvend = l.prize!.price;
-                const client = l.ticketPrice * l.ticketCount;
+              {items.map((item) => {
+                const skinvend = item.price;
+                const client = item.ticketPrice * item.ticketCount;
                 const diff = skinvend - client;
                 const isGood = diff <= 0;
                 const isEqual = diff === 0;
@@ -109,11 +88,11 @@ export default function PrizePoolPage() {
                 const cmpColor = isEqual ? '#888' : isGood ? '#4ade80' : '#f87171';
 
                 return (
-                  <tr key={l.id}>
-                    <td style={{ ...td, fontWeight: 700, color: TIER_COLOR[l.tier] ?? '#aaa', textTransform: 'uppercase', fontSize: '0.75rem', letterSpacing: 1 }}>
-                      {l.tier}
+                  <tr key={item.lotteryId}>
+                    <td style={{ ...td, fontWeight: 700, color: TIER_COLOR[item.tier] ?? '#aaa', textTransform: 'uppercase', fontSize: '0.75rem', letterSpacing: 1 }}>
+                      {item.tier}
                     </td>
-                    <td style={td}>{l.prize!.fullName || l.prize!.skinName}</td>
+                    <td style={td}>{item.fullName}</td>
                     <td style={{ ...td, textAlign: 'right', fontFamily: 'monospace', color: isGood ? '#4ade80' : '#f87171', fontWeight: 600 }}>
                       ${skinvend.toFixed(2)}
                     </td>
@@ -123,13 +102,13 @@ export default function PrizePoolPage() {
                     <td style={{ ...td, textAlign: 'right', fontFamily: 'monospace', fontWeight: 600 }}>
                       ${client.toFixed(2)}
                     </td>
-                    <td style={{ ...td, fontFamily: 'monospace', fontSize: '0.72rem', color: '#555' }}>{l.id}</td>
+                    <td style={{ ...td, fontFamily: 'monospace', fontSize: '0.72rem', color: '#555' }}>{item.lotteryId}</td>
                   </tr>
                 );
               })}
-              {lotteries.length === 0 && (
+              {items.length === 0 && (
                 <tr>
-                  <td colSpan={6} style={{ ...td, color: '#555', textAlign: 'center' }}>No active lotteries with prizes</td>
+                  <td colSpan={6} style={{ ...td, color: '#555', textAlign: 'center' }}>No reserved prize pool items</td>
                 </tr>
               )}
             </tbody>
