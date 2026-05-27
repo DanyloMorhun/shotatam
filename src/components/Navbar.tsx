@@ -24,7 +24,7 @@ function NavQrCode() {
     import('qrcode').then((QRCode) => {
       QRCode.toCanvas(smallRef.current!, MONOBANK_URL, { width: SMALL, margin: 0 });
       QRCode.toCanvas(largeRef.current!, MONOBANK_URL, { width: LARGE, margin: 0 });
-    }).catch(() => {});
+    }).catch(() => { });
   }, []);
 
   return (
@@ -92,7 +92,7 @@ export default function Navbar() {
   useEffect(() => {
     fetch(`${API_URL}/api/auth/refresh`, { method: 'POST', credentials: 'include' })
       .then(res => { if (res.ok) setIsLoggedIn(true); })
-      .catch(() => {});
+      .catch(() => { });
   }, []);
 
   return (

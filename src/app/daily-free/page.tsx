@@ -49,6 +49,7 @@ interface OpenResult {
     freeTickets?: FreeTicketsData;
   };
   cooldownEndsAt: string;
+  luckyHit: boolean;
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -438,6 +439,30 @@ export default function DailyFreePage() {
       {/* Result */}
       {result && (
         <div>
+          {/* Lucky Hit banner */}
+          {result.luckyHit && (
+            <div style={{
+              background: 'linear-gradient(90deg, #431407, #7c2d12)',
+              border: '1px solid #ea580c',
+              borderRadius: 8,
+              padding: '0.65rem 1rem',
+              marginBottom: '0.75rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.6rem',
+            }}>
+              <span style={{ fontSize: '1.2rem' }}>⚡</span>
+              <div>
+                <div style={{ color: '#fb923c', fontWeight: 700, fontSize: '0.85rem', letterSpacing: 1, textTransform: 'uppercase' }}>
+                  Lucky Hit!
+                </div>
+                <div style={{ color: '#fed7aa', fontSize: '0.72rem' }}>
+                  Your reward was amplified by the Lucky Hit multiplier.
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Winning reward summary */}
           <div style={{
             background: '#0d1a0d', border: '1px solid #166534', borderRadius: 8,

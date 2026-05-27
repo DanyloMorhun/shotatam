@@ -16,7 +16,7 @@ export default function TokenRefresher() {
           localStorage.setItem('access_token', result.accessToken);
           window.dispatchEvent(new CustomEvent('access-token', { detail: result.accessToken }));
         }
-      } catch {}
+      } catch { }
     }
     refresh();
     const id = setInterval(refresh, INTERVAL);

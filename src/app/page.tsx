@@ -44,7 +44,7 @@ function ProfileSection({ token, user, onLogout }: { token: string; user: UserBa
 
   useEffect(() => {
     fetchDetails();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function fetchDetails() {
@@ -137,76 +137,76 @@ function ProfileSection({ token, user, onLogout }: { token: string; user: UserBa
           <button onClick={onLogout}>Logout</button>
         </div>
 
-      {details && (
-        <>
-          {/* ── read-only info ── */}
-          <div style={{ background: '#1a1a1a', borderRadius: 6, padding: '0.75rem', fontSize: '0.85rem', fontFamily: 'monospace', display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-              <div><strong>userId:</strong> {details.userId}</div>
-              <div><strong>profileUrl:</strong> <a href={details.profileUrl} target="_blank" rel="noreferrer" style={{ color: '#2563eb' }}>{details.profileUrl}</a></div>
-              <div><strong>createdAt:</strong> {new Date(details.createdAt).toLocaleString()}</div>
-              <div><strong>lastLoginAt:</strong> {details.lastLoginAt ? new Date(details.lastLoginAt).toLocaleString() : <em style={{ color: '#aaa' }}>—</em>}</div>
-              <div style={{ marginTop: 4, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                <strong>invitationLink:</strong>{' '}
-                <a href={details.invitationLink} target="_blank" rel="noreferrer" style={{ color: '#2563eb', wordBreak: 'break-all' }}>
-                  {details.invitationLink}
-                </a>
-                <button
-                  onClick={() => void navigator.clipboard.writeText(details.invitationLink)}
-                  style={{ padding: '1px 8px', cursor: 'pointer', fontFamily: 'monospace', fontSize: '0.72rem', background: '#1a1a1a', border: '1px solid #333', borderRadius: 4, color: '#aaa', flexShrink: 0 }}
-                >
-                  copy
+        {details && (
+          <>
+            {/* ── read-only info ── */}
+            <div style={{ background: '#1a1a1a', borderRadius: 6, padding: '0.75rem', fontSize: '0.85rem', fontFamily: 'monospace', display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <div><strong>userId:</strong> {details.userId}</div>
+                <div><strong>profileUrl:</strong> <a href={details.profileUrl} target="_blank" rel="noreferrer" style={{ color: '#2563eb' }}>{details.profileUrl}</a></div>
+                <div><strong>createdAt:</strong> {new Date(details.createdAt).toLocaleString()}</div>
+                <div><strong>lastLoginAt:</strong> {details.lastLoginAt ? new Date(details.lastLoginAt).toLocaleString() : <em style={{ color: '#aaa' }}>—</em>}</div>
+                <div style={{ marginTop: 4, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                  <strong>invitationLink:</strong>{' '}
+                  <a href={details.invitationLink} target="_blank" rel="noreferrer" style={{ color: '#2563eb', wordBreak: 'break-all' }}>
+                    {details.invitationLink}
+                  </a>
+                  <button
+                    onClick={() => void navigator.clipboard.writeText(details.invitationLink)}
+                    style={{ padding: '1px 8px', cursor: 'pointer', fontFamily: 'monospace', fontSize: '0.72rem', background: '#1a1a1a', border: '1px solid #333', borderRadius: 4, color: '#aaa', flexShrink: 0 }}
+                  >
+                    copy
+                  </button>
+                </div>
+              </div>
+
+              <div style={{ fontSize: '0.82rem', color: '#aaa' }}>
+                <div style={{ fontWeight: 600, marginBottom: 4 }}>Stats</div>
+                <div>won lotteries: {details.stats.wonLotteries}</div>
+                <div>purchased tickets: {details.stats.purchasedTickets}</div>
+                <div>total earnings: ${(details.stats.totalEarnings / 100).toFixed(2)}</div>
+                <div>best win chance: {details.stats.smallestWinChance != null ? `${details.stats.smallestWinChance}%` : '—'}</div>
+              </div>
+            </div>
+
+            {/* ── editable fields ── */}
+            <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+              {(['email', 'telegram', 'tradeUrl'] as const).map(field => (
+                <div key={field} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <span style={labelStyle}>{field}</span>
+                  <input
+                    type="text"
+                    value={draft[field]}
+                    onChange={e => setDraft(d => ({ ...d, [field]: e.target.value }))}
+                    placeholder={
+                      field === 'tradeUrl' ? 'https://steamcommunity.com/tradeoffer/new/?partner=...&token=...'
+                        : field === 'telegram' ? '@username'
+                          : 'email@example.com'
+                    }
+                    style={inputStyle}
+                  />
+                </div>
+              ))}
+
+              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginTop: 4 }}>
+                <button type="submit" disabled={saving} style={{ padding: '5px 16px', cursor: saving ? 'not-allowed' : 'pointer' }}>
+                  {saving ? 'Saving…' : 'Save'}
                 </button>
+                {saveStatus && (
+                  <span style={{
+                    padding: '4px 10px', borderRadius: 6, fontFamily: 'monospace', fontSize: '0.82rem',
+                    background: saveStatus.ok ? '#f0fdf4' : '#fff5f5',
+                    color: saveStatus.ok ? '#15803d' : 'crimson',
+                    border: `1px solid ${saveStatus.ok ? '#86efac' : '#fca5a5'}`,
+                  }}>
+                    {saveStatus.ok ? '✓ ' : '✗ '}{saveStatus.msg}
+                  </span>
+
+                )}
               </div>
-            </div>
-
-            <div style={{ fontSize: '0.82rem', color: '#aaa' }}>
-              <div style={{ fontWeight: 600, marginBottom: 4 }}>Stats</div>
-              <div>won lotteries: {details.stats.wonLotteries}</div>
-              <div>purchased tickets: {details.stats.purchasedTickets}</div>
-              <div>total earnings: ${(details.stats.totalEarnings / 100).toFixed(2)}</div>
-              <div>best win chance: {details.stats.smallestWinChance != null ? `${details.stats.smallestWinChance}%` : '—'}</div>
-            </div>
-          </div>
-
-          {/* ── editable fields ── */}
-          <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-            {(['email', 'telegram', 'tradeUrl'] as const).map(field => (
-              <div key={field} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <span style={labelStyle}>{field}</span>
-                <input
-                  type="text"
-                  value={draft[field]}
-                  onChange={e => setDraft(d => ({ ...d, [field]: e.target.value }))}
-                  placeholder={
-                    field === 'tradeUrl' ? 'https://steamcommunity.com/tradeoffer/new/?partner=...&token=...'
-                    : field === 'telegram' ? '@username'
-                    : 'email@example.com'
-                  }
-                  style={inputStyle}
-                />
-              </div>
-            ))}
-
-            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginTop: 4 }}>
-              <button type="submit" disabled={saving} style={{ padding: '5px 16px', cursor: saving ? 'not-allowed' : 'pointer' }}>
-                {saving ? 'Saving…' : 'Save'}
-              </button>
-              {saveStatus && (
-                <span style={{
-                  padding: '4px 10px', borderRadius: 6, fontFamily: 'monospace', fontSize: '0.82rem',
-                  background: saveStatus.ok ? '#f0fdf4' : '#fff5f5',
-                  color: saveStatus.ok ? '#15803d' : 'crimson',
-                  border: `1px solid ${saveStatus.ok ? '#86efac' : '#fca5a5'}`,
-                }}>
-                  {saveStatus.ok ? '✓ ' : '✗ '}{saveStatus.msg}
-                </span>
-
-              )}
-            </div>
-          </form>
-        </>
-      )}
+            </form>
+          </>
+        )}
       </div>
     </section>
   );

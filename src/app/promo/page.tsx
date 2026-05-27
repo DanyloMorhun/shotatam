@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 
-import { ADMIN_SECRET, API_URL } from '@/config';
+import API_URL, { ADMIN_SECRET } from '@/config';
 
 // ─── DTOs ────────────────────────────────────────────────────────────────────
 
@@ -568,7 +568,7 @@ function FreeTicketsSection({ autoToken, refreshKey }: { autoToken: string; refr
 
   useEffect(() => {
     if (autoToken) void fetchBalance();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoToken, refreshKey]);
 
   async function fetchBalance() {
@@ -672,7 +672,7 @@ export default function PromoPage() {
           setAccessToken(json.result.accessToken);
         }
       })
-      .catch(() => {});
+      .catch(() => { });
   }, []);
 
   return (
