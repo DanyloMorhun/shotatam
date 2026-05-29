@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 
-import API_URL, { ADMIN_SECRET } from '@/config';
+import { API_URL, ADMIN_SECRET } from '@/config';
 
 // ─── DTOs ────────────────────────────────────────────────────────────────────
 
