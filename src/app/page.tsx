@@ -278,14 +278,20 @@ function SystemConsole({ token }: { token: string | null }) {
   useEffect(() => {
     if (!token) return;
     const base = new URL(API_URL).origin;
-    const notif = io(`${base}/notifications`, { transports: ['websocket'], auth: { token } });
+
+    fetch(`${API_URL}/api/wallet/balance`, { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.json())
+      .then((d: { result: { balance: number } }) => setLatestBalance(d.result.balance))
+      .catch(() => {});
+
+    const notif = io(`${base}/balance`, { transports: ['websocket'], auth: { token } });
 
     notif.on('connect', () => setWalletConnected(true));
     notif.on('disconnect', () => setWalletConnected(false));
 
-    notif.on('wallet:balance_updated', (d: { balance: number }) => {
+    notif.on('balance:updated', (d: { balance: number }) => {
       setLatestBalance(d.balance);
-      addLog('wallet', 'wallet:balance_updated', d);
+      addLog('wallet', 'balance:updated', d);
     });
 
     return () => { notif.disconnect(); };
@@ -303,7 +309,7 @@ function SystemConsole({ token }: { token: string | null }) {
       {/* connection status */}
       <div style={{ display: 'flex', gap: '1rem', marginBottom: '0.75rem', fontSize: '0.82rem', fontFamily: 'monospace' }}>
         <span style={{ color: systemConnected ? 'green' : '#aaa' }}>{systemConnected ? '●' : '○'} /system</span>
-        {token && <span style={{ color: walletConnected ? 'green' : '#aaa' }}>{walletConnected ? '●' : '○'} /notifications</span>}
+        {token && <span style={{ color: walletConnected ? 'green' : '#aaa' }}>{walletConnected ? '●' : '○'} /balance</span>}
       </div>
 
       {/* latest stats bar */}
@@ -319,7 +325,7 @@ function SystemConsole({ token }: { token: string | null }) {
         {token && (
           <div style={statCell}>
             <div style={{ color: '#888', fontSize: '0.72rem' }}>balance</div>
-            <div>{latestBalance !== null ? `${(latestBalance / 100).toFixed(2)} $` : '—'}</div>
+            <div>{latestBalance !== null ? `${latestBalance.toFixed(2)} $` : '—'}</div>
           </div>
         )}
         <div style={statCell}>
