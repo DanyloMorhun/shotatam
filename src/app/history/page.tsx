@@ -214,7 +214,7 @@ export default function HistoryPage() {
     setPrivateLoading(true);
     setPrivateError(null);
     try {
-      const res = await fetch(`${API_URL}/api/lotteries/history?limit=100`, {
+      const res = await fetch(`${API_URL}/api/lotteries/history?limit=50`, {
         headers: { Authorization: `Bearer ${accessToken}` },
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -243,7 +243,7 @@ export default function HistoryPage() {
     setPublicLoading(true);
     setPublicError(null);
     try {
-      const res = await fetch(`${API_URL}/api/lotteries/users/${id}/history?limit=100`);
+      const res = await fetch(`${API_URL}/api/lotteries/users/${id}/history?limit=50`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const { result } = await res.json() as { result: PaginatedResult<PublicEntry> };
       setPublicHistory(result);

@@ -137,6 +137,7 @@ function BuyPanel({ lottery, token, onDone }: { lottery: Lottery; token: string 
         {(lottery.quickBuySteps?.length ? lottery.quickBuySteps : [1, 5, 10, 25, 50].filter(n => n <= available)).map(n => (
           <button key={n} style={btnStyle(qty === n)} onClick={() => setQty(n)}>{n}</button>
         ))}
+        <button style={btnStyle(qty === available)} onClick={() => setQty(available)}>All</button>
         <input
           type="number"
           min={1}
