@@ -242,7 +242,7 @@ function AdminSection() {
   async function listPromos() {
     setErr(''); setLoading(true);
     try {
-      const res = await fetch(`${API_URL}/api/admin/promo?limit=50`, { headers: adminHeadersNoBody() });
+      const res = await fetch(`${API_URL}/api/admin/promo?limit=100`, { headers: adminHeadersNoBody() });
       const json = await res.json();
       if (!res.ok) throw new Error(json?.message ?? res.statusText);
       const body: AdminPromoListResponse = json.result ?? json;

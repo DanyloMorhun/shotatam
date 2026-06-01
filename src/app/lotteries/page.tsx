@@ -299,7 +299,7 @@ export default function LotteriesPage() {
     setLoading(true);
     setError(null);
     try {
-      const params = new URLSearchParams({ limit: '50' });
+      const params = new URLSearchParams({ limit: '100' });
       if (categoryFilter !== 'all') params.set('category', categoryFilter);
       const headers: HeadersInit = {};
       if (token) headers['Authorization'] = `Bearer ${token}`;

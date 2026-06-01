@@ -66,8 +66,19 @@ function formatDate(iso: string) {
 
 // ── InventoryCard ─────────────────────────────────────────────────────────────
 
-function InventoryCard({ item }: { item: InventoryItemResponse }) {
+function InventoryCard({
+  item,
+  onSell,
+  selling,
+  sellResult,
+}: {
+  item: InventoryItemResponse;
+  onSell: (id: string) => void;
+  selling: boolean;
+  sellResult: { newBalance: number } | { error: string } | null;
+}) {
   const [imgError, setImgError] = useState(false);
+  const isSellable = item.status === 'available';
 
   return (
     <div style={{
@@ -167,6 +178,45 @@ function InventoryCard({ item }: { item: InventoryItemResponse }) {
         <div style={{ fontSize: '0.68rem', color: '#444', marginTop: 'auto', paddingTop: 4 }}>
           Won {formatDate(item.wonAt)}
         </div>
+
+        {/* Sell result feedback */}
+        {sellResult && (
+          <div style={{
+            marginTop: 4,
+            padding: '0.3rem 0.5rem',
+            borderRadius: 4,
+            fontSize: '0.7rem',
+            background: 'newBalance' in sellResult ? '#14532d' : '#3b0f0f',
+            color: 'newBalance' in sellResult ? '#4ade80' : '#f87171',
+          }}>
+            {'newBalance' in sellResult
+              ? `✓ Sold! New balance: $${sellResult.newBalance.toFixed(2)}`
+              : `✗ ${sellResult.error}`}
+          </div>
+        )}
+
+        {/* Sell button */}
+        {isSellable && (
+          <button
+            onClick={() => onSell(item.id)}
+            disabled={selling}
+            style={{
+              marginTop: 6,
+              padding: '5px 0',
+              borderRadius: 5,
+              border: 'none',
+              background: selling ? '#1f2d1f' : '#14532d',
+              color: selling ? '#4ade8080' : '#4ade80',
+              fontFamily: 'monospace',
+              fontSize: '0.78rem',
+              fontWeight: 700,
+              cursor: selling ? 'not-allowed' : 'pointer',
+              letterSpacing: 0.5,
+            }}
+          >
+            {selling ? 'Selling…' : `Sell for $${item.prize.price.toFixed(2)}`}
+          </button>
+        )}
       </div>
     </div>
   );
@@ -185,6 +235,12 @@ export default function InventoryPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
+
+  const [balance, setBalance] = useState<number | null>(null);
+
+  // Per-item sell state: itemId → selling | result
+  const [sellingId, setSellingId] = useState<string | null>(null);
+  const [sellResults, setSellResults] = useState<Record<string, { newBalance: number } | { error: string }>>({});
 
   useEffect(() => {
     void silentRefresh();
@@ -206,7 +262,21 @@ export default function InventoryPage() {
   useEffect(() => {
     if (!token) return;
     void fetchInventory(token, page);
+    void fetchBalance(token);
   }, [token, page]);
+
+  async function fetchBalance(accessToken: string) {
+    try {
+      const res = await fetch(`${API_URL}/api/wallet/balance`, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      if (!res.ok) return;
+      const { result } = await res.json() as { result: { balance: number } };
+      setBalance(result.balance);
+    } catch {
+      // non-critical
+    }
+  }
 
   async function fetchInventory(accessToken: string, p: number) {
     setLoading(true);
@@ -222,6 +292,45 @@ export default function InventoryPage() {
       setError(String(e));
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleSell(itemId: string) {
+    if (!token || sellingId) return;
+    setSellingId(itemId);
+    setSellResults(prev => { const next = { ...prev }; delete next[itemId]; return next; });
+
+    try {
+      const res = await fetch(`${API_URL}/api/inventory/${itemId}/sell`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const body = await res.json() as { result?: { newBalance: number }; message?: string };
+
+      if (!res.ok) {
+        const msg = (body as { message?: string }).message ?? `HTTP ${res.status}`;
+        setSellResults(prev => ({ ...prev, [itemId]: { error: msg } }));
+        return;
+      }
+
+      const newBalance = body.result!.newBalance;
+      setSellResults(prev => ({ ...prev, [itemId]: { newBalance } }));
+      setBalance(newBalance);
+
+      // Mark the item as sold in local state so the button disappears
+      setInventory(prev => prev
+        ? {
+          ...prev,
+          data: prev.data.map(item =>
+            item.id === itemId ? { ...item, status: 'sold' as const } : item
+          ),
+        }
+        : prev
+      );
+    } catch (e) {
+      setSellResults(prev => ({ ...prev, [itemId]: { error: String(e) } }));
+    } finally {
+      setSellingId(null);
     }
   }
 
@@ -251,7 +360,14 @@ export default function InventoryPage() {
             </div>
           )}
         </div>
-        <span style={{ fontSize: '0.82rem', color: '#4ade80' }}>● {username}</span>
+        <div style={{ textAlign: 'right' }}>
+          <div style={{ fontSize: '0.82rem', color: '#4ade80' }}>● {username}</div>
+          {balance !== null && (
+            <div style={{ fontSize: '0.78rem', color: '#facc15', marginTop: 2 }}>
+              Balance: ${balance.toFixed(2)}
+            </div>
+          )}
+        </div>
       </div>
 
       {error && (
@@ -269,7 +385,13 @@ export default function InventoryPage() {
       {!loading && inventory && inventory.data.length > 0 && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '0.75rem' }}>
           {inventory.data.map(item => (
-            <InventoryCard key={item.id} item={item} />
+            <InventoryCard
+              key={item.id}
+              item={item}
+              onSell={handleSell}
+              selling={sellingId === item.id}
+              sellResult={sellResults[item.id] ?? null}
+            />
           ))}
         </div>
       )}
