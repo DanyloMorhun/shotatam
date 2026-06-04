@@ -69,7 +69,7 @@ function adminHeadersNoBody() {
 
 const REWARD_CONFIG_DEFAULTS: Record<PromoRewardType, string> = {
   free_tickets: JSON.stringify({ tier: 'low', quantity: 3 }, null, 2),
-  balance_topup_bonus: JSON.stringify({ bonusType: 'percentage', bonusValue: 20, minTopUpAmountCents: 1000 }, null, 2),
+  balance_topup_bonus: JSON.stringify({ bonusType: 'percentage', bonusValue: 20 }, null, 2),
   free_balance: JSON.stringify({ amountCents: 5000 }, null, 2),
 };
 
@@ -148,9 +148,9 @@ function Field({ label: l, value, onChange, placeholder, type = 'text' }: {
   );
 }
 
-// ─── Section: Activate ───────────────────────────────────────────────────────
+// ─── Section: Activate Regular Promo ─────────────────────────────────────────
 
-function ActivateSection({ onFreeTickets }: { onFreeTickets: () => void }) {
+function ActivateRegularPromoSection({ onFreeTickets }: { onFreeTickets: () => void }) {
   const [code, setCode] = useState('');
   const [result, setResult] = useState<ActivatePromoResponse | null>(null);
   const [err, setErr] = useState('');
@@ -178,7 +178,8 @@ function ActivateSection({ onFreeTickets }: { onFreeTickets: () => void }) {
 
   return (
     <div style={card}>
-      <h3 style={{ margin: '0 0 1rem', color: '#fff', fontSize: '0.9rem' }}>Activate Promo Code</h3>
+      <h3 style={{ margin: '0 0 1rem', color: '#fff', fontSize: '0.9rem' }}>Activate Regular Promo Code</h3>
+      <p style={{ color: '#888', fontSize: '0.75rem', marginTop: 0, marginBottom: 10 }}>free balance / free tickets only</p>
       <div style={row}>
         <div style={{ flex: 1 }}>
           <label style={label}>Promo code</label>
@@ -205,6 +206,201 @@ function ActivateSection({ onFreeTickets }: { onFreeTickets: () => void }) {
           )}
           <pre style={pre}>{JSON.stringify(result, null, 2)}</pre>
         </>
+      )}
+    </div>
+  );
+}
+
+// ─── Section: Activate Topup Bonus ───────────────────────────────────────────
+
+interface ActivateTopupBonusResponse {
+  promoId: string;
+  activatedAt: string;
+  rewardDetails: { bonusType: string; bonusValue: number };
+}
+
+function ActivateTopupBonusSection() {
+  const [code, setCode] = useState('');
+  const [result, setResult] = useState<ActivateTopupBonusResponse | null>(null);
+  const [err, setErr] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  async function activate() {
+    setErr(''); setResult(null); setLoading(true);
+    try {
+      const res = await fetch(`${API_URL}/api/promo/activate/topup-bonus`, {
+        method: 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify({ code }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json?.message ?? res.statusText);
+      setResult(json.result ?? json);
+    } catch (e: unknown) {
+      setErr(e instanceof Error ? e.message : String(e));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function formatBonusValue(bonusType: string, bonusValue: number) {
+    return bonusType === 'percentage' ? `${bonusValue}%` : `$${(bonusValue / 100).toFixed(2)}`;
+  }
+
+  return (
+    <div style={card}>
+      <h3 style={{ margin: '0 0 1rem', color: '#fff', fontSize: '0.9rem' }}>Activate Top-up Bonus Promo Code</h3>
+      <div style={row}>
+        <div style={{ flex: 1 }}>
+          <label style={label}>Promo code</label>
+          <input style={input} value={code} placeholder="TOPUP2025" onChange={e => setCode(e.target.value.toUpperCase())} />
+        </div>
+        <button style={btn()} disabled={loading || !code} onClick={activate}>
+          {loading ? '…' : 'Activate'}
+        </button>
+      </div>
+      {err && <p style={errorStyle}>{err}</p>}
+      {result && (
+        <>
+          <p style={{ color: '#4ade80', fontSize: '0.8rem', marginTop: 8 }}>✓ Activated</p>
+          <div style={{
+            background: '#0d1a2a', border: '1px solid #1e3a5f', borderRadius: 6,
+            padding: '8px 12px', marginTop: 8, fontSize: '0.8rem', display: 'flex', gap: 16, flexWrap: 'wrap',
+          }}>
+            <div>
+              <span style={{ color: '#888' }}>Bonus type: </span>
+              <span style={{ color: '#a3e635', fontFamily: 'monospace', fontWeight: 700 }}>{result.rewardDetails.bonusType}</span>
+            </div>
+            <div>
+              <span style={{ color: '#888' }}>Value: </span>
+              <span style={{ color: '#a3e635', fontFamily: 'monospace', fontWeight: 700 }}>
+                {formatBonusValue(result.rewardDetails.bonusType, result.rewardDetails.bonusValue)}
+              </span>
+            </div>
+          </div>
+          <pre style={pre}>{JSON.stringify(result, null, 2)}</pre>
+        </>
+      )}
+    </div>
+  );
+}
+
+// ─── Section: Bonus Inventory ─────────────────────────────────────────────────
+
+interface BonusInventoryItem {
+  id: string;
+  bonusType: string;
+  bonusValue: number;
+  expiresAt: string | null;
+  status: 'available' | 'active' | 'used' | 'expired';
+  createdAt: string;
+}
+
+function BonusInventorySection() {
+  const [items, setItems] = useState<BonusInventoryItem[] | null>(null);
+  const [err, setErr] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [revealedCodes, setRevealedCodes] = useState<Record<string, string>>({});
+  const [revealLoading, setRevealLoading] = useState<Record<string, boolean>>({});
+  const [revealErr, setRevealErr] = useState<Record<string, string>>({});
+
+  async function fetchInventory() {
+    setErr(''); setLoading(true);
+    try {
+      const res = await fetch(`${API_URL}/api/v1/daily-free/bonuses/inventory`, {
+        headers: authHeaders(),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json?.message ?? res.statusText);
+      const body = json.result ?? json;
+      setItems(body.items ?? body);
+    } catch (e: unknown) {
+      setErr(e instanceof Error ? e.message : String(e));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function revealCode(id: string) {
+    setRevealErr(prev => ({ ...prev, [id]: '' }));
+    setRevealLoading(prev => ({ ...prev, [id]: true }));
+    try {
+      const res = await fetch(`${API_URL}/api/v1/daily-free/bonuses/inventory/${id}/reveal`, {
+        method: 'POST',
+        headers: authHeaders(),
+        body: '{}',
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json?.message ?? res.statusText);
+      const body = json.result ?? json;
+      setRevealedCodes(prev => ({ ...prev, [id]: body.code }));
+      await fetchInventory();
+    } catch (e: unknown) {
+      setRevealErr(prev => ({ ...prev, [id]: e instanceof Error ? e.message : String(e) }));
+    } finally {
+      setRevealLoading(prev => ({ ...prev, [id]: false }));
+    }
+  }
+
+  function formatBonusValue(bonusType: string, bonusValue: number) {
+    return bonusType === 'percentage' ? `${bonusValue}%` : `$${(bonusValue / 100).toFixed(2)}`;
+  }
+
+  return (
+    <div style={card}>
+      <h3 style={{ margin: '0 0 1rem', color: '#fff', fontSize: '0.9rem' }}>Bonus Inventory</h3>
+      <div style={{ marginBottom: 12 }}>
+        <button style={btn('#059669')} disabled={loading} onClick={fetchInventory}>
+          {loading ? '…' : 'GET bonus inventory'}
+        </button>
+      </div>
+      {err && <p style={errorStyle}>{err}</p>}
+      {items !== null && (
+        items.length === 0 ? (
+          <p style={{ color: '#555', fontSize: '0.8rem' }}>No bonus items in inventory.</p>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {items.map(item => (
+              <div key={item.id} style={{ background: '#0d0d0d', borderRadius: 6, padding: '10px 14px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                  <span style={{ color: '#6366f1', fontFamily: 'monospace', fontSize: '0.75rem' }}>{item.bonusType}</span>
+                  <span style={{ color: '#a3e635', fontWeight: 700, fontFamily: 'monospace' }}>
+                    {formatBonusValue(item.bonusType, item.bonusValue)}
+                  </span>
+                  <span style={{
+                    fontSize: '0.7rem', padding: '1px 6px', borderRadius: 3,
+                    background: item.status === 'available' ? '#14532d' : item.status === 'active' ? '#1e3a5f' : '#2a1a0a',
+                    color: item.status === 'available' ? '#4ade80' : item.status === 'active' ? '#60a5fa' : '#888',
+                  }}>
+                    {item.status}
+                  </span>
+                  <span style={{ color: '#555', fontSize: '0.72rem' }}>
+                    expires: {item.expiresAt ? new Date(item.expiresAt).toLocaleString() : '—'}
+                  </span>
+                  {item.status === 'available' && !revealedCodes[item.id] && (
+                    <button
+                      style={{ ...btn('#7c3aed'), marginLeft: 'auto' }}
+                      disabled={revealLoading[item.id]}
+                      onClick={() => revealCode(item.id)}
+                    >
+                      {revealLoading[item.id] ? '…' : 'Reveal code'}
+                    </button>
+                  )}
+                </div>
+                {revealErr[item.id] && <p style={errorStyle}>{revealErr[item.id]}</p>}
+                {revealedCodes[item.id] && (
+                  <div style={{
+                    background: '#0d1a2a', border: '1px solid #1e3a5f', borderRadius: 4,
+                    padding: '6px 10px', marginTop: 8, fontSize: '0.82rem',
+                  }}>
+                    <span style={{ color: '#888' }}>Code: </span>
+                    <span style={{ color: '#a3e635', fontFamily: 'monospace', fontWeight: 700 }}>{revealedCodes[item.id]}</span>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )
       )}
     </div>
   );
@@ -680,7 +876,9 @@ export default function PromoPage() {
       <h2 style={{ color: '#fff', fontSize: '1rem', marginBottom: '1.5rem', letterSpacing: '0.02em' }}>
         Promo Testing
       </h2>
-      <ActivateSection onFreeTickets={() => setTicketRefreshKey(k => k + 1)} />
+      <ActivateRegularPromoSection onFreeTickets={() => setTicketRefreshKey(k => k + 1)} />
+      <ActivateTopupBonusSection />
+      <BonusInventorySection />
       <FreeTicketsSection autoToken={accessToken} refreshKey={ticketRefreshKey} />
       <AdminSection />
     </main>

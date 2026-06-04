@@ -32,7 +32,7 @@ interface FreeTicketsData {
 
 interface CardReveal {
   index: number;
-  type: 'balance' | 'free_tickets' | 'skin';
+  type: 'balance' | 'free_tickets' | 'skin' | 'topup_bonus';
   amountCents: number;
   isWinning: boolean;
   skin?: SkinData;
@@ -43,7 +43,7 @@ interface OpenResult {
   cards: CardReveal[];
   winningIndex: number;
   reward: {
-    type: string;
+    type: 'balance' | 'free_tickets' | 'skin' | 'topup_bonus';
     amountCents: number;
     skin?: SkinData;
     freeTickets?: FreeTicketsData;
@@ -116,6 +116,8 @@ function Card({ card, revealed }: { card: CardReveal; revealed: boolean }) {
           <span style={{ fontSize: '1.6rem' }}>💰</span>
         ) : card.type === 'free_tickets' ? (
           <span style={{ fontSize: '1.6rem' }}>🎫</span>
+        ) : card.type === 'topup_bonus' ? (
+          <span style={{ fontSize: '1.6rem' }}>🎁</span>
         ) : (
           <span style={{ fontSize: '1.6rem' }}>🎁</span>
         )}
@@ -124,7 +126,7 @@ function Card({ card, revealed }: { card: CardReveal; revealed: boolean }) {
       {/* Details */}
       <div style={{ padding: '0.5rem 0.65rem', flex: 1, display: 'flex', flexDirection: 'column', gap: 4, fontSize: '0.75rem' }}>
         <div style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, color: '#555', fontSize: '0.62rem' }}>
-          {card.type === 'balance' ? 'Bonus' : card.type === 'free_tickets' ? 'Free Tickets' : 'Skin'}
+          {card.type === 'balance' ? 'Bonus' : card.type === 'free_tickets' ? 'Free Tickets' : card.type === 'topup_bonus' ? 'Top-up Bonus' : 'Skin'}
         </div>
 
         {card.type === 'skin' && card.skin && (
@@ -152,6 +154,12 @@ function Card({ card, revealed }: { card: CardReveal; revealed: boolean }) {
               {card.freeTickets.tier}
             </span>
             <span style={{ fontWeight: 700, color: '#a5b4fc' }}>×{card.freeTickets.quantity}</span>
+          </div>
+        )}
+
+        {card.type === 'topup_bonus' && (
+          <div style={{ color: '#a3e635', fontWeight: 700, fontSize: '0.9rem' }}>
+            +{(card.amountCents / 100).toFixed(2)} top-up bonus
           </div>
         )}
 
@@ -500,6 +508,13 @@ export default function DailyFreePage() {
                     {result.reward.freeTickets.tier}
                   </span>
                   <span style={{ fontWeight: 700, color: '#a5b4fc' }}>×{result.reward.freeTickets.quantity}</span>
+                </div>
+              )}
+              {result.reward.type === 'topup_bonus' && (
+                <div>
+                  <span style={{ color: '#555' }}>Top-up bonus: </span>
+                  <span style={{ color: '#a3e635', fontWeight: 700 }}>${(result.reward.amountCents / 100).toFixed(2)}</span>
+                  <span style={{ color: '#555', marginLeft: 8 }}>• Added to your bonus inventory</span>
                 </div>
               )}
               <div>
