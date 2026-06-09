@@ -14,6 +14,7 @@ interface ChannelBonusDto {
   tier?: 'low' | 'mid' | 'high';
   channelUrl: string;
   status: 'active' | 'inactive';
+  redirected: boolean;
   claimed: boolean;
   claimedAt: string | null;
 }
@@ -116,7 +117,9 @@ function SubscriptionBonusesSection() {
       const json = await res.json() as { result?: unknown; message?: string };
       if (!res.ok) throw new Error(json?.message ?? res.statusText);
       const body = (json.result ?? json) as { channels?: ChannelBonusDto[] } | ChannelBonusDto[];
-      setChannels((Array.isArray(body) ? body : body.channels) ?? []);
+      const resolved = (Array.isArray(body) ? body : body.channels) ?? [];
+      setChannels(resolved);
+      setRedirected(Object.fromEntries(resolved.map(ch => [ch.channel, ch.redirected])));
     } catch (e: unknown) {
       setListErr(e instanceof Error ? e.message : String(e));
     } finally {
