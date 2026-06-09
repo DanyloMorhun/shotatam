@@ -223,7 +223,7 @@ interface PlatformStats {
 interface LogEntry {
   id: number;
   time: string;
-  source: 'system' | 'wallet';
+  source: 'system' | 'wallet' | 'auth';
   event: string;
   payload: unknown;
 }
@@ -232,6 +232,7 @@ function SystemConsole({ token }: { token: string | null }) {
   const [log, setLog] = useState<LogEntry[]>([]);
   const [systemConnected, setSystemConnected] = useState(false);
   const [walletConnected, setWalletConnected] = useState(false);
+  const [tokenExpiryState, setTokenExpiryState] = useState<'ok' | 'expiring' | 'expired'>('ok');
 
   // latest known values
   const [latestTime, setLatestTime] = useState<string | null>(null);
@@ -275,9 +276,22 @@ function SystemConsole({ token }: { token: string | null }) {
     return () => { sys.disconnect(); };
   }, []);
 
+  async function refreshToken() {
+    try {
+      const res = await fetch(`${API_URL}/api/auth/refresh`, { method: 'POST', credentials: 'include' });
+      if (res.ok) {
+        const { result } = await res.json();
+        localStorage.setItem('access_token', result.accessToken);
+        window.dispatchEvent(new CustomEvent('access-token', { detail: result.accessToken }));
+      }
+    } catch { }
+  }
+
   useEffect(() => {
     if (!token) return;
     const base = new URL(API_URL).origin;
+
+    setTokenExpiryState('ok');
 
     fetch(`${API_URL}/api/wallet/balance`, { headers: { Authorization: `Bearer ${token}` } })
       .then(r => r.json())
@@ -294,6 +308,19 @@ function SystemConsole({ token }: { token: string | null }) {
       addLog('wallet', 'balance:updated', d);
     });
 
+    notif.on('auth:token_expiring', (d: { expiresAt: number }) => {
+      addLog('auth', 'auth:token_expiring', d);
+      setTokenExpiryState('expiring');
+      void refreshToken();
+    });
+
+    notif.on('auth:token_expired', () => {
+      addLog('auth', 'auth:token_expired', null);
+      setTokenExpiryState('expired');
+      // Fallback refresh in case auth:token_expiring refresh failed
+      void refreshToken();
+    });
+
     return () => { notif.disconnect(); };
   }, [token]);
 
@@ -307,9 +334,15 @@ function SystemConsole({ token }: { token: string | null }) {
       <h2 style={{ marginBottom: '0.75rem' }}>Logs</h2>
 
       {/* connection status */}
-      <div style={{ display: 'flex', gap: '1rem', marginBottom: '0.75rem', fontSize: '0.82rem', fontFamily: 'monospace' }}>
+      <div style={{ display: 'flex', gap: '1rem', marginBottom: '0.75rem', fontSize: '0.82rem', fontFamily: 'monospace', flexWrap: 'wrap', alignItems: 'center' }}>
         <span style={{ color: systemConnected ? 'green' : '#aaa' }}>{systemConnected ? '●' : '○'} /system</span>
         {token && <span style={{ color: walletConnected ? 'green' : '#aaa' }}>{walletConnected ? '●' : '○'} /balance</span>}
+        {token && tokenExpiryState === 'expiring' && (
+          <span style={{ color: '#f59e0b' }}>⚠ token expiring — refreshing…</span>
+        )}
+        {token && tokenExpiryState === 'expired' && (
+          <span style={{ color: '#ef4444' }}>✗ token expired — reconnecting…</span>
+        )}
       </div>
 
       {/* latest stats bar */}
@@ -348,7 +381,7 @@ function SystemConsole({ token }: { token: string | null }) {
         {log.map(e => (
           <div key={e.id} style={{ fontFamily: 'monospace', fontSize: '0.78rem', padding: '2px 0', borderBottom: '1px solid #1f1f1f', display: 'flex', gap: 8 }}>
             <span style={{ color: '#555', flexShrink: 0 }}>{e.time}</span>
-            <span style={{ color: e.source === 'wallet' ? '#60a5fa' : '#4ade80', flexShrink: 0 }}>[{e.source}]</span>
+            <span style={{ color: e.source === 'wallet' ? '#60a5fa' : e.source === 'auth' ? '#f59e0b' : '#4ade80', flexShrink: 0 }}>[{e.source}]</span>
             <span style={{ color: '#ccc', flexShrink: 0 }}>{e.event}</span>
             <span style={{ color: '#888', wordBreak: 'break-all' }}>{JSON.stringify(e.payload)}</span>
           </div>
