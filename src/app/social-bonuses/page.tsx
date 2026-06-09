@@ -24,6 +24,7 @@ interface ClaimResponse {
   channel: string;
   rewardType: string;
   rewardAmount: number;
+  tier: string | null;
   claimedAt: string;
 }
 
