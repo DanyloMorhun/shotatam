@@ -74,6 +74,7 @@ const AUTH_LINKS = [
   { href: '/promo', label: 'Promo' },
   { href: '/social-bonuses', label: 'Social Bonuses' },
   { href: '/transactions', label: 'Transactions' },
+  { href: '/notifications', label: 'Notifications' },
 ];
 
 export default function Navbar() {
