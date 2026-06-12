@@ -26,10 +26,19 @@ interface PaginatedResult {
   totalPages: number;
 }
 
+/** Shape of the notification:new socket event — base fields + unreadCount + optional win extras */
+interface WsNotificationPayload extends Notification {
+  unreadCount: number;
+  // win-type extras
+  lotteryId?: string;
+  skinName?: string;
+  backgroundColor?: string;
+}
+
 interface WsLogEntry {
   id: number;
   time: string;
-  payload: Notification;
+  payload: WsNotificationPayload;
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -93,6 +102,7 @@ export default function NotificationsPage() {
   }
 
   function connectWs(t: string) {
+    socketRef.current?.disconnect();
     const base = new URL(API_URL).origin;
     const socket = io(`${base}/notifications`, { transports: ['websocket'], auth: { token: t } });
     socketRef.current = socket;
@@ -100,11 +110,11 @@ export default function NotificationsPage() {
     socket.on('connect', () => setWsConnected(true));
     socket.on('disconnect', () => setWsConnected(false));
 
-    socket.on('notification:new', (payload: Notification) => {
+    socket.on('notification:new', (payload: WsNotificationPayload) => {
       const d = new Date();
       const time = `${d.toLocaleTimeString('en', { hour12: false })}.${String(d.getMilliseconds()).padStart(3, '0')}`;
       setWsLog(prev => [{ id: ++wsLogId.current, time, payload }, ...prev.slice(0, 49)]);
-      setUnreadCount(prev => (prev ?? 0) + 1);
+      setUnreadCount(payload.unreadCount);
       // Refresh list if on page 1 so the new item appears immediately
       setPage(1);
       void fetchList(t, 1);
@@ -351,11 +361,23 @@ export default function NotificationsPage() {
             </div>
           )}
           {wsLog.map(e => (
-            <div key={e.id} style={{ fontFamily: 'monospace', fontSize: '0.77rem', padding: '3px 0', borderBottom: '1px solid #111', display: 'flex', gap: 8 }}>
-              <span style={{ color: '#555', flexShrink: 0 }}>{e.time}</span>
-              <span style={{ color: TYPE_COLOR[e.payload.type], flexShrink: 0 }}>[{e.payload.type}]</span>
-              <span style={{ color: '#ccc', flexShrink: 0 }}>{e.payload.title}</span>
-              <span style={{ color: '#888', wordBreak: 'break-all' }}>{e.payload.message}</span>
+            <div key={e.id} style={{ fontFamily: 'monospace', fontSize: '0.77rem', padding: '3px 0', borderBottom: '1px solid #111' }}>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <span style={{ color: '#555', flexShrink: 0 }}>{e.time}</span>
+                <span style={{ color: TYPE_COLOR[e.payload.type], flexShrink: 0 }}>[{e.payload.type}]</span>
+                <span style={{ color: '#aaa', flexShrink: 0 }}>unread: <strong style={{ color: '#f59e0b' }}>{e.payload.unreadCount}</strong></span>
+                <span style={{ color: '#ccc', flexShrink: 0 }}>{e.payload.title}</span>
+                <span style={{ color: '#888', wordBreak: 'break-all' }}>{e.payload.message}</span>
+              </div>
+              {e.payload.type === 'win' && (e.payload.lotteryId ?? e.payload.skinName) && (
+                <div style={{ paddingLeft: 8, marginTop: 2, color: '#a78bfa', fontSize: '0.72rem' }}>
+                  {e.payload.lotteryId && <span style={{ marginRight: 10 }}>lotteryId: {e.payload.lotteryId}</span>}
+                  {e.payload.skinName && <span style={{ marginRight: 10 }}>skin: {e.payload.skinName}</span>}
+                  {e.payload.backgroundColor && (
+                    <span>bg: <span style={{ background: e.payload.backgroundColor, color: '#fff', padding: '0 5px', borderRadius: 3 }}>{e.payload.backgroundColor}</span></span>
+                  )}
+                </div>
+              )}
             </div>
           ))}
         </div>
